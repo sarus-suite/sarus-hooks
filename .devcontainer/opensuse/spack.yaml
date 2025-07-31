@@ -1,0 +1,10 @@
+spack:
+  specs: 
+    - googletest cxxstd=20
+  mirrors:
+    develop: https://cache.spack.io/develop
+  concretizer:
+    unify: true
+  config:
+    install_tree: /opt/software
+  view: /opt/views/view

@@ -1,0 +1,11 @@
+*.pyc
+*.swp
+*.swo
+*.gcov
+*.gcno
+*.gcda
+build*/
+
+# Auto-generated files
+CTestTestfile.cmake
+cmake_install.cmake

@@ -1,0 +1,47 @@
+# Build stage with Spack pre-installed and ready to be used
+FROM docker.io/opensuse/leap:15.5 AS builder
+
+RUN zypper install -y --no-recommends \
+       curl git python3-pip python3-devel gcc14 gcc14-c++ xz patch gpg2 patchelf tar gzip unzip bzip2 \
+       wget autoconf automake zlib-devel libcurl-devel cmake3 \
+       libboost_filesystem1_75_0-devel libboost_regex1_75_0-devel libboost_program_options1_75_0-devel \
+    && pip3 install clingo gcovr
+ENV CC=/usr/bin/gcc-14
+ENV CXX=/usr/bin/g++-14
+
+# Install and configure Spack
+ENV SPACK_ROOT=/opt/spack
+ENV PATH=${PATH}:${SPACK_ROOT}/bin
+RUN git clone --depth 1 --branch v1.0.0 https://github.com/spack/spack.git ${SPACK_ROOT} \
+    && . ${SPACK_ROOT}/share/spack/setup-env.sh && spack external find
+
+# What we want to install and how we want to install it
+# is specified in a manifest file (spack.yaml)
+COPY spack.yaml /opt/spack-environment/spack.yaml
+
+# Install the software, remove unnecessary deps
+RUN cd /opt/spack-environment && . ${SPACK_ROOT}/share/spack/setup-env.sh \
+    && spack env activate . && spack install --fail-fast && spack gc -y
+
+# Strip all the Spack binaries
+RUN find -L /opt/views/view/* -type f -exec readlink -f '{}' \; | \
+    xargs file -i | \
+    grep 'charset=binary' | \
+    grep 'x-executable\|x-archive\|x-sharedlib' | \
+    awk -F: '{print $1}' | xargs strip
+
+# Modifications to the environment that are necessary to run
+RUN cd /opt/spack-environment && . ${SPACK_ROOT}/share/spack/setup-env.sh \
+    && spack env activate --sh -d . > activate.sh
+
+RUN { \
+      echo '#!/bin/sh' \
+      && echo '.' /opt/spack-environment/activate.sh \
+      && echo 'exec "$@"'; \
+    } > /entrypoint.sh \
+&& chmod a+x /entrypoint.sh \
+&& ln -s /opt/views/view /opt/view
+
+ENTRYPOINT [ "/entrypoint.sh" ]
+CMD [ "/bin/bash" ]
+

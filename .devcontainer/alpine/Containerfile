@@ -1,0 +1,46 @@
+# Build stage with Spack pre-installed and ready to be used
+FROM docker.io/alpine:3.22 AS builder
+
+RUN apk update \
+    && apk add curl git py3-pip python3-dev build-base linux-headers xz patch gpg patchelf tar gzip unzip bzip2 \
+       wget autoconf automake zlib-dev curl-dev cmake boost boost-dev boost1.84-static icu-libs icu-dev icu-static \
+       bash \
+    && rm /usr/lib/python3.12/EXTERNALLY-MANAGED \
+    && pip3 install clingo
+
+# Install and configure Spack
+ENV SPACK_ROOT=/opt/spack
+ENV PATH=${PATH}:${SPACK_ROOT}/bin
+RUN git clone --depth 1 --branch v1.0.0 https://github.com/spack/spack.git ${SPACK_ROOT} \
+    && . ${SPACK_ROOT}/share/spack/setup-env.sh && spack external find
+
+# What we want to install and how we want to install it
+# is specified in a manifest file (spack.yaml)
+COPY spack.yaml /opt/spack-environment/spack.yaml
+
+# Install the software, remove unnecessary deps
+RUN cd /opt/spack-environment && . ${SPACK_ROOT}/share/spack/setup-env.sh && spack env activate . \
+    && spack install --fail-fast && spack gc -y
+
+# Strip all the Spack binaries, except archives, as it will remove indexes from static libraries
+RUN find -L /opt/views/view/* -type f -exec readlink -f '{}' \; | \
+    xargs file -i | \
+    grep 'charset=binary' | \
+    grep 'x-executable\|x-sharedlib' | \
+    awk -F: '{print $1}' | xargs strip
+
+# Modifications to the environment that are necessary to run
+RUN cd /opt/spack-environment && . ${SPACK_ROOT}/share/spack/setup-env.sh && \
+    spack env activate --sh -d . > activate.sh
+
+RUN { \
+      echo '#!/bin/sh' \
+      && echo '.' /opt/spack-environment/activate.sh \
+      && echo 'exec "$@"'; \
+    } > /entrypoint.sh \
+&& chmod a+x /entrypoint.sh \
+&& ln -s /opt/views/view /opt/view
+
+ENTRYPOINT [ "/entrypoint.sh" ]
+CMD [ "/bin/bash" ]
+
