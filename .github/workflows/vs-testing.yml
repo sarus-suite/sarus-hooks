@@ -22,3 +22,16 @@ jobs:
         run: ls -la
         working-directory: ${{ env.TMP_DIR }}
 
+      - name: Build and local install the hooks
+        run: |
+          # TODO: current dummy taking static bins
+          # TODO: build and local install from devcontainer
+          HOOKS_DIR="/scratch/local/podman-hooks/hooks.d"
+          echo "HOOKS_DIR=$HOOKS_DIR" >> $GITHUB_ENV
+          echo "Using Hooks directory: $HOOKS_DIR" 
+
+      - name: Run podman and check hooks work
+        run |
+          podman --hooks-dir $HOOKS_DIR run --rm alpine cat /mnt/os-release
+          # TODO: some simple assert for the above
+
