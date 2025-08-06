@@ -31,7 +31,7 @@ jobs:
           echo "Using Hooks directory: $HOOKS_DIR" 
 
       - name: Run podman and check hooks work
-        run |
+        run: |
           podman --hooks-dir $HOOKS_DIR run --rm alpine cat /mnt/os-release
           # TODO: some simple assert for the above
 
