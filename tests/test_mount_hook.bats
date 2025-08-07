@@ -10,7 +10,7 @@ setup() {
 {
   "version": "1.0.0",
   "hook": {
-    "path": "/local/scratch/podman-hooks/bin/mount_hook",
+    "path": "/scratch/local/podman-hooks/bin/mount_hook",
     "args": ["mount_hook",
       "--mount=type=bind,src=${HOME},dst=/mnt/hostbind,readonly",
       "--device=/dev/null:/dev/specialnull:rw",
