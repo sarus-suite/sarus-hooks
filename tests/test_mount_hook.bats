@@ -2,7 +2,7 @@ setup() {
   # Create temporary directories
   TMP_HOOKS_DIR=$(mktemp -d)
 
-  # Create test file in bind mount source
+  # Create test file in user home not clean but mount hook of tmp is not allowed
   echo "test-file" > "${HOME}/sarus-hook-test-file.txt"
 
   # Create hook config
