@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Bats tests
         run: |
-          cd parallax
+          cd sarus-hooks
           $TMP_DIR/bats/bin/bats tests
         working-directory: ${{ env.TMP_DIR}}
 
