@@ -1,10 +1,9 @@
 setup() {
   # Create temporary directories
   TMP_HOOKS_DIR=$(mktemp -d)
-  TMP_BIND_SRC=$(mktemp -d)
 
   # Create test file in bind mount source
-  echo "test-file" > "${TMP_BIND_SRC}/file.txt"
+  echo "test-file" > "${HOME}/sarus-hook-test-file.txt"
 
   # Create hook config
   cat > "${TMP_HOOKS_DIR}/mount-hook.json" <<EOF
@@ -13,11 +12,13 @@ setup() {
   "hook": {
     "path": "/local/scratch/podman-hooks/bin/mount_hook",
     "args": ["mount_hook",
-      "--mount=type=bind,src=${TMP_BIND_SRC},dst=/mnt/hostbind,readonly",
+      "--mount=type=bind,src=${HOME},dst=/mnt/hostbind,readonly",
       "--device=/dev/null:/dev/specialnull:rw",
       "--device=/dev/null:/dev/null:r"
     ],
-    "env": ["LDCONFIG_PATH=/sbin/ldconfig"]
+    "env": [
+      "LDCONFIG_PATH=/sbin/ldconfig"
+    ]
   },
   "when": {
     "always": true
@@ -28,11 +29,11 @@ EOF
 }
 
 teardown() {
-  rm -rf "${TMP_HOOKS_DIR}" "${TMP_BIND_SRC}"
+  rm -rf "${TMP_HOOKS_DIR}"
 }
 
 @test "mount_hook binds directory and devices correctly" {
-  run podman --hooks-dir "${TMP_HOOKS_DIR}" run --rm alpine sh -c "cat /mnt/hostbind/file.txt"
+  run podman --hooks-dir "${TMP_HOOKS_DIR}" run --rm alpine sh -c "cat /mnt/hostbind/sarus-hook-test-file.txt"
   [ "$status" -eq 0 ]
   [ "$output" = "test-file" ]
 }
