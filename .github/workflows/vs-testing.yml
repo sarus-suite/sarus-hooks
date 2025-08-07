@@ -22,6 +22,12 @@ jobs:
         run: ls -la
         working-directory: ${{ env.TMP_DIR }}
 
+      - name: Install Bats locally into TMP_DIR
+        run: |
+          git clone --depth 1 https://github.com/bats-core/bats-core.git "$TMP_DIR/bats-core"
+          "$TMP_DIR/bats-core/install.sh" "$TMP_DIR/bats"
+        working-directory: ${{ env.TMP_DIR }}
+
       - name: Build and local install the hooks
         run: |
           # TODO: current dummy taking static bins
