@@ -1,7 +1,7 @@
 file(GLOB hooks_mpi_srcs "*.cpp" "*.c")
 list(REMOVE_ITEM hooks_mpi_srcs ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 add_library(hooks_mpi_library STATIC ${hooks_mpi_srcs})
-target_link_libraries(hooks_mpi_library sarus ${Boost_LIBRARIES} libsarus)
+target_link_libraries(hooks_mpi_library libsarus_static ${Boost_LIBRARIES})
 
 add_executable(mpi_hook "main.cpp")
 target_link_libraries(mpi_hook hooks_mpi_library)
