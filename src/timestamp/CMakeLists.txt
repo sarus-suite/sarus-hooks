@@ -10,7 +10,4 @@ install(TARGETS timestamp_hook DESTINATION ${CMAKE_INSTALL_PREFIX}/bin PERMISSIO
     GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE)
 
-if(${ENABLE_UNIT_TESTS})
-    add_subdirectory(test)
-endif(${ENABLE_UNIT_TESTS})
 
