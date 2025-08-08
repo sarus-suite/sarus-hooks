@@ -24,3 +24,6 @@ if(${BUILD_DROPBEAR})
     install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink dropbearmulti ${CMAKE_INSTALL_PREFIX}/dropbear/bin/dropbear)")
     install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink dropbearmulti ${CMAKE_INSTALL_PREFIX}/dropbear/bin/dropbearkey)")
 endif(${BUILD_DROPBEAR})
+
+# libsarus
+add_subdirectory(libsarus)
