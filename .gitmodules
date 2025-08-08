@@ -1,3 +1,6 @@
 [submodule "dep/rapidjson"]
 	path = dep/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+[submodule "dep/libsarus"]
+	path = dep/libsarus
+	url = https://github.com/sarus-suite/libsarus.git
