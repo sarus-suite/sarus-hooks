@@ -26,4 +26,5 @@ if(${BUILD_DROPBEAR})
 endif(${BUILD_DROPBEAR})
 
 # libsarus
+set(ENABLE_UNIT_TESTS OFF)
 add_subdirectory(libsarus)
