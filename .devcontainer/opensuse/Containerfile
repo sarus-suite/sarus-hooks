@@ -2,12 +2,12 @@
 FROM docker.io/opensuse/leap:15.5 AS builder
 
 RUN zypper install -y --no-recommends \
-       curl git python3-pip python3-devel gcc14 gcc14-c++ xz patch gpg2 patchelf tar gzip unzip bzip2 \
-       wget autoconf automake zlib-devel libcurl-devel cmake3 \
+       curl git python3-pip python3-devel gcc14 gcc14-c++  glibc-devel-static libxcrypt-devel-static xz patch gpg2 patchelf tar gzip unzip bzip2 \
+       wget autoconf automake zlib-devel zlib-devel-static libcurl-devel cmake3 \
        libboost_filesystem1_75_0-devel libboost_regex1_75_0-devel libboost_program_options1_75_0-devel \
     && pip3 install clingo gcovr
-ENV CC=/usr/bin/gcc-14
-ENV CXX=/usr/bin/g++-14
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 10 \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 10
 
 # Install and configure Spack
 ENV SPACK_ROOT=/opt/spack
