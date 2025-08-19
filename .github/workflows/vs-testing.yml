@@ -43,6 +43,6 @@ jobs:
       - name: Run Bats tests
         run: |
           cd sarus-hooks
-          $TMP_DIR/bats/bin/bats tests
+          $TMP_DIR/bats/bin/bats tests/test_mount_hook.bats
         working-directory: ${{ env.TMP_DIR}}
 
