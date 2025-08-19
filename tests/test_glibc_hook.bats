@@ -1,5 +1,6 @@
 setup() {
   TMP_HOOKS_DIR="$(mktemp -d)"
+  OLD_IMAGE="ubuntu:16.04"
 
   cat > "${TMP_HOOKS_DIR}/glibc-hook.json" <<EOF
 {
@@ -27,4 +28,57 @@ teardown() {
   rm -rf "${TMP_HOOKS_DIR}"
 }
 
+@test "validate old Ubuntu container" {
+  run podman run --rm "$OLD_IMAGE" bash -lc 'ldd --version | head -n1'
+  [ "$status" -eq 0 ]
+  [[ ! "$output" =~ 2\.31 ]]
+}
+
+@test "glibc_hook injection ldd check" {
+  run podman --hooks-dir "${TMP_HOOKS_DIR}" run --rm \
+      --annotation com.hooks.glibc.enabled=true \
+      "$OLD_IMAGE" bash -lc '
+        ldd --version | head -n1
+      '
+  [ "$status" -eq 0 ]
+
+  # We are 2.31
+  [[ "$output" =~ 2\.31 ]]
+}
+
+@test "glibc_hook injection ldconfig check" {
+  run podman --hooks-dir "${TMP_HOOKS_DIR}" run --rm \
+      --annotation com.hooks.glibc.enabled=true \
+      "$OLD_IMAGE" bash -lc '
+        ldconfig -p | egrep -i "libc\.so\.6|ld-[^ ]*\.so|libpthread|libdl|librt|libm|libutil|libnsl|libresolv|libnss_dns|libnss_files|libnss_compat|libnss_db|libanl|libBrokenLocale|libSegFault|libthread_db|libcrypt" || true
+      '
+  [ "$status" -eq 0 ]
+
+  # Check if we can find libs in ldconfig
+  for pat in \
+    'libc\.so\.6' \
+    'ld-[^ ]*\.so' \
+    'libpthread' \
+    'libdl' \
+    'librt' \
+    'libm' \
+    'libutil' \
+    'libnsl' \
+    'libresolv' \
+    'libnss_dns' \
+    'libnss_files' \
+    'libnss_compat' \
+    'libnss_db' \
+    'libanl' \
+    'libBrokenLocale' \
+    'libSegFault' \
+    'libthread_db' \
+    'libcrypt'
+  do
+    [[ "$output" =~ $pat ]] || {
+      echo "Missing library from container ldconfig: $pat"
+      false
+    }
+  done
+}
 
