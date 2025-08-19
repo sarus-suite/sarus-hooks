@@ -27,6 +27,29 @@ setup() {
   "stages": ["createContainer"]
 }
 EOF
+
+  # search for the following in hook output
+  expected_entries=(
+    "libSegFault.so"
+    "librt-2.31.so"
+    "libnss_dns-2.31.so"
+    "libanl-2.31.so"
+    "libresolv-2.31.so"
+    "libnsl.so.2.0.0"
+    "libBrokenLocale-2.31.so"
+    "ld-2.31.so"
+    "libnss_hesiod-2.31.so"
+    "libutil-2.31.so"
+    "libnss_files-2.31.so"
+    "libnss_compat-2.31.so"
+    "libnss_db-2.31.so"
+    "libm-2.31.so"
+    "libcrypt.so.1.1.0"
+    "libc-2.31.so"
+    "libpthread-2.31.so"
+    "libdl-2.31.so"
+    "libthread_db-1.0.so"
+  )
 }
 
 teardown() {
@@ -61,6 +84,32 @@ helper_run_hooked_podman(){
   # hook output exist and is non-empty means hook runs
   [ -f "$HOOK_OUT" ]
   [ -s "$HOOK_OUT" ]
+}
+
+@test "validate hook injects as expected" {
+  run helper_run_hooked_podman 'ldd --version'
+  [ "$status" -eq 0 ]
+
+  [ -f "$HOOK_OUT" ]
+  [ -s "$HOOK_OUT" ]
+
+  hooklog="$(cat "$HOOK_OUT")"
+  count_injections=0
+  missing=()
+  for t in "${expected_entries[@]}"; do
+    if [[ "$hooklog" == *"$t"* ]]; then
+      ((matched++))
+    else
+      missing+=("$t")
+    fi
+  done
+
+  [[ $count_injections -ge 10 ]] || {
+    echo "Missing too many references in hook log ($matched/${#expected_entries[@]})"
+    printf 'Missing tokens: %s\n' "${missing[@]}"
+    echo "Log path: $HOOK_OUT"
+    false
+  }
 }
 
 
