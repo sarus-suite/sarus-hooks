@@ -98,14 +98,14 @@ helper_run_hooked_podman(){
   missing=()
   for t in "${expected_entries[@]}"; do
     if [[ "$hooklog" == *"$t"* ]]; then
-      ((matched++))
+      count_injections=$((count_injections+1))
     else
       missing+=("$t")
     fi
   done
 
   [[ $count_injections -ge 10 ]] || {
-    echo "Missing too many references in hook log ($matched/${#expected_entries[@]})"
+    echo "Missing too many references in hook log ($count_injections/${#expected_entries[@]})"
     printf 'Missing tokens: %s\n' "${missing[@]}"
     echo "Log path: $HOOK_OUT"
     false
