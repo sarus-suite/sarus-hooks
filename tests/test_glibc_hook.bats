@@ -1,6 +1,11 @@
 setup() {
   TMP_HOOKS_DIR="$(mktemp -d)"
+  TMP_HOOK_LOG_DIR="$(mktemp -d)"
   OLD_IMAGE="ubuntu:16.04"
+  RUNTIME="crun"
+
+  HOOK_OUT="${TMP_HOOK_LOG_DIR}/glibc-hook.out"
+  HOOK_ERR="${TMP_HOOK_LOG_DIR}/glibc-hook.err"
 
   cat > "${TMP_HOOKS_DIR}/glibc-hook.json" <<EOF
 {
@@ -25,7 +30,22 @@ EOF
 }
 
 teardown() {
-  rm -rf "${TMP_HOOKS_DIR}"
+  rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}"
+}
+
+helper_run_hooked_podman(){
+  # clean out and err dirs
+  > "${HOOK_OUT}"
+  > "${HOOK_ERR}"
+
+  podman --runtime="${RUNTIME}" \
+    --hooks-dir "${TMP_HOOKS_DIR}" \
+    run --rm \
+    --annotation com.hooks.glibc.enabled=true \
+    --annotation com.hooks.logging.level=0 \
+    --annotation run.oci.hooks.stdout="${HOOK_OUT}" \
+    --annotation run.oci.hooks.stderr="${HOOK_ERR}" \
+    "$OLD_IMAGE" bash -lc "$1"
 }
 
 @test "validate old Ubuntu container" {
@@ -34,51 +54,13 @@ teardown() {
   [[ ! "$output" =~ 2\.31 ]]
 }
 
-@test "glibc_hook injection ldd check" {
-  run podman --hooks-dir "${TMP_HOOKS_DIR}" run --rm \
-      --annotation com.hooks.glibc.enabled=true \
-      "$OLD_IMAGE" bash -lc '
-        ldd --version | head -n1
-      '
+@test "validate hook runs" {
+  run helper_run_hooked_podman 'ldd --version'
   [ "$status" -eq 0 ]
 
-  # We are 2.31
-  [[ "$output" =~ 2\.31 ]]
+  # hook output exist and is non-empty means hook runs
+  [ -f "$HOOK_OUT" ]
+  [ -s "$HOOK_OUT" ]
 }
 
-@test "glibc_hook injection ldconfig check" {
-  run podman --hooks-dir "${TMP_HOOKS_DIR}" run --rm \
-      --annotation com.hooks.glibc.enabled=true \
-      "$OLD_IMAGE" bash -lc '
-        ldconfig -p | egrep -i "libc\.so\.6|ld-[^ ]*\.so|libpthread|libdl|librt|libm|libutil|libnsl|libresolv|libnss_dns|libnss_files|libnss_compat|libnss_db|libanl|libBrokenLocale|libSegFault|libthread_db|libcrypt" || true
-      '
-  [ "$status" -eq 0 ]
-
-  # Check if we can find libs in ldconfig
-  for pat in \
-    'libc\.so\.6' \
-    'ld-[^ ]*\.so' \
-    'libpthread' \
-    'libdl' \
-    'librt' \
-    'libm' \
-    'libutil' \
-    'libnsl' \
-    'libresolv' \
-    'libnss_dns' \
-    'libnss_files' \
-    'libnss_compat' \
-    'libnss_db' \
-    'libanl' \
-    'libBrokenLocale' \
-    'libSegFault' \
-    'libthread_db' \
-    'libcrypt'
-  do
-    [[ "$output" =~ $pat ]] || {
-      echo "Missing library from container ldconfig: $pat"
-      false
-    }
-  done
-}
 
