@@ -27,4 +27,5 @@ private:
 };
 
 }}} // closing namespaces
-# endif
+
+#endif
