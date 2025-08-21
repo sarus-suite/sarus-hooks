@@ -1,7 +1,10 @@
 #ifndef sarus_hooks_ldcache_LdCacheHook_hpp
 #define sarus_hooks_ldcache_LdCacheHook_hpp
 
+#include <string>
 #include <boost/filesystem.hpp>
+
+#include "libsarus/Utility.hpp"
 #include "libsarus/Logger.hpp"
 
 namespace sarus {
@@ -10,8 +13,7 @@ namespace ldcache {
 
 class LdCacheHook {
 public:
-    LdCacheHook();
-    void refresh();
+    void activate();
 
 private:
     void parseConfigJSONOfBundle();
@@ -19,7 +21,8 @@ private:
     void log(const std::string& msg, libsarus::LogLevel lvl) const;
 
 private:
-    boost::filesystem::path rootfsDir;
+    libsarus::hook::ContainerState containerState;
+	boost::filesystem::path rootfsDir;
     boost::filesystem::path ldconfigPath;
 };
 
