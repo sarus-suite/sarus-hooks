@@ -2,7 +2,6 @@
 
 #include "libsarus/Error.hpp"
 #include "libsarus/Utility.hpp"
-#include "libsarus/CLIArguments.hpp"
 
 namespace sarus {
 namespace hooks {
@@ -46,7 +45,8 @@ void LdCacheHook::parseEnvironmentVariables() {
 		log("Success parsing LDCONFIG_PATH", libsarus::LogLevel::INFO);
     }
     catch (const libsarus::Error&) {
-        log("Failed to parse ldconfig", libsarus::LogLevel::INFO);
+        log("LDCONFIG_PATH not set. Using default ldconfig", libsarus::LogLevel::INFO);
+		ldconfigPath = "ldconfig";
     }
 }
 
