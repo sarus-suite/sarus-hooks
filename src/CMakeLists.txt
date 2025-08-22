@@ -7,6 +7,7 @@ add_subdirectory(ssh)
 add_subdirectory(slurm_global_sync)
 add_subdirectory(timestamp)
 add_subdirectory(stdout_stderr_test)
+add_subdirectory(ldcache)
 
 # Collective target for hooks
 add_custom_target(hooks ALL)
