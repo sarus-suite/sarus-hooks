@@ -1,0 +1,56 @@
+name: Run on Zinal
+
+on:
+  push:
+    branches:
+      - 'fc-*'
+      - 'LdCacheHook'
+
+jobs:
+  build:
+    if: github.actor == 'fcruzcscs'
+    runs-on: zinal
+    steps:
+      - name: Setup temporary dir
+        run: |
+          TMP_DIR=$(mktemp -d)
+          echo "TMP_DIR=$TMP_DIR" >> $GITHUB_ENV
+          echo "Using temp directory: $TMP_DIR" 
+
+      - name: Manually clone repo within tmp dir
+        run: git clone --depth 1 --branch "${GITHUB_REF_NAME}" https://github.com/${GITHUB_REPOSITORY}.git
+        working-directory: ${{ env.TMP_DIR }}
+
+      - name: List contents of TMP_DIR
+        run: ls -la
+        working-directory: ${{ env.TMP_DIR }}
+
+      - name: Run build inside Podman container
+        run: |
+          podman run --rm \
+          -v "$PWD":"$PWD":Z \
+          -v "$TMP_DIR":"$TMP_DIR":Z \
+          -w "$PWD" \
+          --env TMP_DIR="$TMP_DIR" \
+          --env GITHUB_REF_NAME="$GITHUB_REF_NAME" \
+          ghcr.io/sarus-suite/sarus-hooks/ci-runner:latest \
+          bash -euxc '
+            mkdir -p $TMP_DIR/dist
+
+            export VER=opensuse-15.5
+
+           '
+        working-directory: ${{ env.TMP_DIR }}/parallax
+
+      - name: Install Bats locally
+        run: |
+          git clone --depth 1 https://github.com/bats-core/bats-core.git "$TMP_DIR/bats-core"
+          "$TMP_DIR/bats-core/install.sh" "$TMP_DIR/bats"
+        working-directory: ${{ env.TMP_DIR }}
+
+      - name: Testing podman run
+        run: |
+          export PODMAN_BINARY=$(which podman)
+          $PODMAN_BINARY version
+        working-directory: ${{ env.TMP_DIR}}
+
