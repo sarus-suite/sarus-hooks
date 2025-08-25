@@ -40,7 +40,7 @@ jobs:
             export VER=opensuse-15.5
 
            '
-        working-directory: ${{ env.TMP_DIR }}/parallax
+        working-directory: ${{ env.TMP_DIR }}/sarus-hooks
 
       - name: Install Bats locally
         run: |
