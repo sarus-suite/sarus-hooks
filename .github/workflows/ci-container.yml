@@ -1,7 +1,9 @@
 name: Build & Publish CI Container
 
 on:
-  push: {}
+  push:
+    paths:
+      - '.devcontainer/opensuse/Containerfile'
 
 jobs:
   changes:
