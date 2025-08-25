@@ -40,6 +40,10 @@ jobs:
             git clone --recursive https://github.com/sarus-suite/libsarus.git
             cd libsarus
 
+            # Install deps as per docs
+            ./install_dep.sh
+            ./build.sh
+
             # Building libsarus to std system prefix
             mkdir -p build && cd build
             cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..
