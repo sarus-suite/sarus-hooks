@@ -50,8 +50,10 @@ jobs:
             cd $TMP_DIR/sarus-hooks
             cmake -S . -B build \
               -DBUILD_DROPBEAR=0 \
-              -DENABLE_UNIT_TESTS=0
-            cmake --install build --prefix /scratch/local/podman-hooks
+              -DENABLE_UNIT_TESTS=0 \
+              -DCMAKE_INSTALL_PREFIX=$TMP_DIR/podman-hooks
+            cmake --build build --parallel
+            cmake --install build
            '
         working-directory: ${{ env.TMP_DIR }}/sarus-hooks
 
