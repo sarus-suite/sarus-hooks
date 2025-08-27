@@ -1,11 +1,16 @@
 # Build stage with Spack pre-installed and ready to be used
 FROM docker.io/opensuse/leap:15.5 AS builder
 
-RUN zypper install -y --no-recommends \
-       curl git python3-pip python3-devel gcc14 gcc14-c++ xz patch gpg2 patchelf tar gzip unzip bzip2 \
-       wget autoconf automake zlib-devel libcurl-devel cmake3 \
-       libboost_filesystem1_75_0-devel libboost_regex1_75_0-devel libboost_program_options1_75_0-devel \
-    && pip3 install clingo gcovr
+RUN zypper ref && zypper -n install --no-recommends \
+      curl git python311 python311-pip python311-devel \
+      gcc14 gcc14-c++ xz patch gpg2 patchelf tar gzip unzip bzip2 \
+      wget autoconf automake zlib-devel libcurl-devel cmake3 \
+      libboost_filesystem1_75_0-devel libboost_regex1_75_0-devel libboost_program_options1_75_0-devel \
+      libxml2-devel libxslt-devel \
+  && update-alternatives --set python3 /usr/bin/python3.11 || true \
+  && python3.11 -m pip install --upgrade "pip<25" setuptools wheel \
+  && python3.11 -m pip install clingo gcovr
+
 ENV CC=/usr/bin/gcc-14
 ENV CXX=/usr/bin/g++-14
 
