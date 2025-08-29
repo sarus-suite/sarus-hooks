@@ -45,5 +45,4 @@ endif(NOT LATEST_GIT_TAG)
 message(STATUS "Sarus Hooks version: " ${LATEST_GIT_TAG})
 
 add_subdirectory(dep)
-add_subdirectory(dep/libsarus)
 add_subdirectory(src)
