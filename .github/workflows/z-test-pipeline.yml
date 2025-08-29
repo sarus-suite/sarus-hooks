@@ -68,7 +68,7 @@ jobs:
           grep -n 'ldcache_hook' tests/test_ldcache_hook.bats
         working-directory: ${{ env.TMP_DIR }}/sarus-hooks
 
-      - name: Run Bats test: ldcache_hook
+      - name: Run Bats test for ldcache_hook
         run: |
           $TMP_DIR/bats/bin/bats -t tests/test_ldcache_hook.bats
         working-directory: ${{ env.TMP_DIR }}/sarus-hooks
