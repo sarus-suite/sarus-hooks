@@ -28,6 +28,7 @@ message(STATUS "Installation directory: " ${CMAKE_INSTALL_PREFIX})
 message(STATUS "Build Dropbear: " ${BUILD_DROPBEAR})
 
 include_directories(${CMAKE_SOURCE_DIR}/dep/rapidjson/include)
+include_directories(${CMAKE_SOURCE_DIR}/dep/libsarus/include)
 
 find_package(Boost REQUIRED NO_MODULE COMPONENTS program_options filesystem regex)
 include_directories(${Boost_INCLUDE_DIRS})

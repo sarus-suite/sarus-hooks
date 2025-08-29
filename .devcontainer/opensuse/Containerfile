@@ -4,12 +4,16 @@ FROM docker.io/opensuse/leap:15.5 AS builder
 RUN zypper ref && zypper -n install --no-recommends \
       curl git python311 python311-pip python311-devel \
       gcc14 gcc14-c++ xz patch gpg2 patchelf tar gzip unzip bzip2 \
+      glibc-devel-static libxcrypt-devel-static zlib-devel-static \
       wget autoconf automake zlib-devel libcurl-devel cmake3 \
       libboost_filesystem1_75_0-devel libboost_regex1_75_0-devel libboost_program_options1_75_0-devel \
       libxml2-devel libxslt-devel \
   && update-alternatives --set python3 /usr/bin/python3.11 || true \
   && python3.11 -m pip install --upgrade "pip<25" setuptools wheel \
   && python3.11 -m pip install clingo gcovr
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 10 \
+  && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 10
 
 ENV CC=/usr/bin/gcc-14
 ENV CXX=/usr/bin/g++-14
