@@ -35,26 +35,15 @@ jobs:
           --env GITHUB_REF_NAME="$GITHUB_REF_NAME" \
           ghcr.io/sarus-suite/sarus-hooks/ci-runner:latest \
           bash -euxc '
-            mkdir -p $TMP_DIR/opt
-            cd $TMP_DIR/opt
-            git clone --recursive https://github.com/sarus-suite/libsarus.git
-            cd libsarus
-
-            # Building libsarus to std system prefix
-            mkdir -p build && cd build
-            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..
-            make -j
-            make install
-
             # Building hooks
             cd $TMP_DIR/sarus-hooks
-            ## ensure dependencies are pulled
+            ## ensure dependencies are pulled (including libsarus)
             git submodule update --init --recursive --depth 1
-
 
             cmake -S . -B build \
               -DBUILD_DROPBEAR=0 \
               -DENABLE_UNIT_TESTS=0 \
+              -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_INSTALL_PREFIX=$TMP_DIR/podman-hooks
             cmake --build build --parallel
             cmake --install build
