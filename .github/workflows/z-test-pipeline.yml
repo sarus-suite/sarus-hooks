@@ -57,7 +57,8 @@ jobs:
 
       - name: Export built hooks path and check
         run: |
-          echo "HOOKS_BIN=$TMP_DIR/podman-hooks/bin" >> $GITHUB_ENV
+          HOOKS_BIN=$TMP_DIR/podman-hooks/bin
+          echo "HOOKS_BIN=$HOOKS_BIN" >> $GITHUB_ENV
           echo "Using hooks from: $HOOKS_BIN"
           ls -l "$HOOKS_BIN"
 
