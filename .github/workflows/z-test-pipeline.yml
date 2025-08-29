@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - 'fc-*'
-      - 'LdCacheHook'
 
 jobs:
   build:
@@ -35,26 +34,15 @@ jobs:
           --env GITHUB_REF_NAME="$GITHUB_REF_NAME" \
           ghcr.io/sarus-suite/sarus-hooks/ci-runner:latest \
           bash -euxc '
-            mkdir -p $TMP_DIR/opt
-            cd $TMP_DIR/opt
-            git clone --recursive https://github.com/sarus-suite/libsarus.git
-            cd libsarus
-
-            # Building libsarus to std system prefix
-            mkdir -p build && cd build
-            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..
-            make -j
-            make install
-
             # Building hooks
             cd $TMP_DIR/sarus-hooks
-            ## ensure dependencies are pulled
+            ## ensure dependencies are pulled (including libsarus)
             git submodule update --init --recursive --depth 1
-
 
             cmake -S . -B build \
               -DBUILD_DROPBEAR=0 \
               -DENABLE_UNIT_TESTS=0 \
+              -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_INSTALL_PREFIX=$TMP_DIR/podman-hooks
             cmake --build build --parallel
             cmake --install build
@@ -67,9 +55,22 @@ jobs:
           "$TMP_DIR/bats-core/install.sh" "$TMP_DIR/bats"
         working-directory: ${{ env.TMP_DIR }}
 
-      - name: Testing podman run
+      - name: Export built hooks path and check
         run: |
-          export PODMAN_BINARY=$(which podman)
-          $PODMAN_BINARY version
-        working-directory: ${{ env.TMP_DIR}}
+          HOOKS_BIN=$TMP_DIR/podman-hooks/bin
+          echo "HOOKS_BIN=$HOOKS_BIN" >> $GITHUB_ENV
+          echo "Using hooks from: $HOOKS_BIN"
+          ls -l "$HOOKS_BIN"
+
+      - name: Patch ldcache test to use locally installed hook
+        run: |
+          sed -i "s#/opt/sarus/bin/ldcache_hook#${HOOKS_DIR}/ldcache_hook#g" tests/test_ldcache_hook.bats
+          # Sanity check
+          grep -n 'ldcache_hook' tests/test_ldcache_hook.bats
+        working-directory: ${{ env.TMP_DIR }}/sarus-hooks
+
+      - name: Run Bats test for ldcache_hook
+        run: |
+          $TMP_DIR/bats/bin/bats -t tests/test_ldcache_hook.bats
+        working-directory: ${{ env.TMP_DIR }}/sarus-hooks
 

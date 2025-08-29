@@ -2,7 +2,7 @@
 file(GLOB hooks_timestamp_srcs "*.cpp" "*.c")
 list(REMOVE_ITEM hooks_timestamp_srcs ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 add_library(hooks_timestamp_library STATIC ${hooks_timestamp_srcs})
-target_link_libraries(hooks_timestamp_library sarus  ${Boost_LIBRARIES})
+target_link_libraries(hooks_timestamp_library libsarus_static ${Boost_LIBRARIES})
 
 add_executable(timestamp_hook "main.cpp")
 target_link_libraries(timestamp_hook hooks_timestamp_library)
