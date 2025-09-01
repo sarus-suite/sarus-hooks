@@ -6,7 +6,6 @@ RUN zypper ref && zypper -n install --no-recommends \
       gcc14 gcc14-c++ xz patch gpg2 patchelf tar gzip unzip bzip2 \
       glibc-devel-static libxcrypt-devel-static zlib-devel-static \
       wget autoconf automake zlib-devel libcurl-devel cmake3 \
-      libboost_filesystem1_75_0-devel libboost_regex1_75_0-devel libboost_program_options1_75_0-devel \
       libxml2-devel libxslt-devel \
   && update-alternatives --set python3 /usr/bin/python3.11 || true \
   && python3.11 -m pip install --upgrade "pip<25" setuptools wheel \
@@ -17,6 +16,26 @@ RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 10 \
 
 ENV CC=/usr/bin/gcc-14
 ENV CXX=/usr/bin/g++-14
+
+# Build Boost (static libs only) **without ICU**
+ARG BOOST_VER=1.75.0
+ARG BOOST_U=1_75_0
+RUN set -eux; \
+  cd /tmp; \
+  curl -L -o boost.tar.bz2 https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VER}/source/boost_${BOOST_U}.tar.bz2; \
+  tar -xjf boost.tar.bz2; \
+  cd boost_${BOOST_U}; \
+  ./bootstrap.sh --prefix=/opt/static --without-icu; \
+  ./b2 -j"$(nproc)" \
+      variant=release link=static runtime-link=shared threading=multi \
+      --without-icu \
+      --with-filesystem --with-program_options --with-regex --with-system \
+      install; \
+  rm -rf /tmp/boost*
+
+# Make CMake prefer our static Boost
+ENV CMAKE_PREFIX_PATH=/opt/static
+ENV Boost_ROOT=/opt/static
 
 # Install and configure Spack
 ENV SPACK_ROOT=/opt/spack
