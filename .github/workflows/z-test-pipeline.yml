@@ -40,6 +40,7 @@ jobs:
             git submodule update --init --recursive --depth 1
 
             cmake -S . -B build \
+              -DBoost_USE_STATIC_LIBS=ON \
               -DBUILD_DROPBEAR=0 \
               -DENABLE_UNIT_TESTS=0 \
               -DBUILD_SHARED_LIBS=OFF \
