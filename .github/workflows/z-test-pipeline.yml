@@ -40,7 +40,14 @@ jobs:
             git submodule update --init --recursive --depth 1
 
             cmake -S . -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_PREFIX_PATH=/opt/static \
+              -DBoost_ROOT=/opt/static \
+              -DBoost_DIR=/opt/static/lib/cmake/Boost-1.82.0 \
               -DBoost_USE_STATIC_LIBS=ON \
+              -DBoost_USE_STATIC_RUNTIME=ON \
+              -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
+              -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
               -DBUILD_DROPBEAR=0 \
               -DENABLE_UNIT_TESTS=0 \
               -DBUILD_SHARED_LIBS=OFF \
