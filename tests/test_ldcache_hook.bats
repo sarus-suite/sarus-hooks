@@ -7,6 +7,8 @@ setup() {
   HOOK_OUT="${TMP_HOOK_LOG_DIR}/out.log"
   HOOK_ERR="${TMP_HOOK_LOG_DIR}/err.log"
 
+  echo "HOOK LOG DIR: $TMP_HOOK_LOG_DIR"
+
   cat > "${TMP_HOOKS_DIR}/02-ldcache.json" <<'EOF'
 {
   "version": "1.0.0",
@@ -24,10 +26,6 @@ teardown() {
 }
 
 helper_run_hooked_podman() {
-  # cleanup hook output
-  : > "${HOOK_OUT}"
-  : > "${HOOK_ERR}"
-
   # run hook with debug output
   podman --runtime="${RUNTIME}" \
     --hooks-dir "${TMP_HOOKS_DIR}" \
@@ -40,6 +38,9 @@ helper_run_hooked_podman() {
 
 
 @test "hook runs and generates debug logs" {
+  # cleanup hook output
+  : > "${HOOK_OUT}"
+  : > "${HOOK_ERR}"
   run helper_run_hooked_podman 'true'
   [ "$status" -eq 0 ]
   [ -s "$HOOK_OUT" ]
@@ -47,6 +48,9 @@ helper_run_hooked_podman() {
 
 
 @test "ldcache summary values are sane" {
+  # cleanup hook output
+  : > "${HOOK_OUT}"
+  : > "${HOOK_ERR}"
   run helper_run_hooked_podman 'true'
   [ "$status" -eq 0 ]
 
