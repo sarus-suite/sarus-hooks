@@ -31,13 +31,11 @@ void LdCacheHook::activate() {
     }
 
     // Output summary
-    using fs = boost::filesystem;
-
     boost::filesystem::path cache = rootfsDir / "etc/ld.so.cache";
 
-    bool cacheExists = fs::exists(cache);
-    std::uintmax_t cacheSize = cacheExists ? fs::file_size(cache) : 0;
-    std::time_t cacheMtime = cacheExists ? fs::last_write_time(cache) : 0;
+    bool cacheExists = boost::filesystem::exists(cache);
+    std::uintmax_t cacheSize = cacheExists ? boost::filesystem::file_size(cache) : 0;
+    std::time_t cacheMtime = cacheExists ? boost::filesystem::last_write_time(cache) : 0;
 
     std::string summary = (boost::format(
         "summary rootfs=%1% cache_exists=%2% cache_size=%3% cache_mtime=%4%")
