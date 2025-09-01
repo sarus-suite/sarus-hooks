@@ -38,10 +38,31 @@ helper_run_hooked_podman() {
       "${TEST_IMAGE}" bash -lc "$1"
 }
 
+
 @test "hook runs and generates debug logs" {
   run helper_run_hooked_podman 'true'
   [ "$status" -eq 0 ]
 #  [ -s "$HOOK_OUT" ]
+}
+
+
+@test "ldcache summary values are sane" {
+  run helper_run_hooked_podman 'true'
+  [ "$status" -eq 0 ]
+
+  # Collect the hook summary
+  local summary
+  summary=$(grep -m1 'summary rootfs=' "$HOOK_OUT")
+
+  # Extract data fields
+  local size mtime
+  size=$(sed -E 's/.*cache_size=([0-9]+).*/\1/' <<<"$summary")
+  mtime=$(sed -E 's/.*cache_mtime=([0-9]+).*/\1/' <<<"$summary")
+
+  # Check time is a number > 0 and so is size
+  [[ "$size" =~ ^[0-9]+$ ]]
+  [[ "$mtime" =~ ^[0-9]+$ ]]
+  [ "$mtime" -gt 0 ]
 }
 
 #@test "/etc/ld.so.cache exists after hook" {
