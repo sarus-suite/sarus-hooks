@@ -42,7 +42,7 @@ helper_run_hooked_podman() {
 @test "hook runs and generates debug logs" {
   run helper_run_hooked_podman 'true'
   [ "$status" -eq 0 ]
-#  [ -s "$HOOK_OUT" ]
+  [ -s "$HOOK_OUT" ]
 }
 
 
