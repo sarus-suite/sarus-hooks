@@ -1,4 +1,7 @@
 setup() {
+  load '../test/test_helper/bats-support/load'
+  load '../test/test_helper/bats-assert/load'
+  
   RUNTIME="${RUNTIME:-crun}"
   TEST_IMAGE="${TEST_IMAGE:-ubuntu:20.04}"
 
@@ -26,6 +29,9 @@ teardown() {
 }
 
 helper_run_hooked_podman() {
+  # cleanup hook output
+  : > "${HOOK_OUT}"
+  : > "${HOOK_ERR}"
   # run hook with debug output
   podman --runtime="${RUNTIME}" \
     --hooks-dir "${TMP_HOOKS_DIR}" \
@@ -38,21 +44,22 @@ helper_run_hooked_podman() {
 
 
 @test "hook runs and generates debug logs" {
-  # cleanup hook output
-  : > "${HOOK_OUT}"
-  : > "${HOOK_ERR}"
   run helper_run_hooked_podman 'true'
-  [ "$status" -eq 0 ]
-  [ -s "$HOOK_OUT" ]
+  echo " OUTPUT $output"
+ 
+  assert_success
+ 
+  # run test -e "$HOOK_OUT"
+  run bash -c '[ -e "$0" ] && cat "$0"' "$HOOK_OUT"
+  assert_success
+#  echo " OUTPUT $output"
+#  assert_output --partial "yeah"
 }
 
 
 @test "ldcache summary values are sane" {
-  # cleanup hook output
-  : > "${HOOK_OUT}"
-  : > "${HOOK_ERR}"
   run helper_run_hooked_podman 'true'
-  [ "$status" -eq 0 ]
+  assert_success
 
   # Collect the hook summary
   local summary
