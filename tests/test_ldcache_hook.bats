@@ -71,9 +71,9 @@ helper_run_hooked_podman() {
   mtime=$(sed -E 's/.*cache_mtime=([0-9]+).*/\1/' <<<"$summary")
 
   # Check time is a number > 0 and so is size
-  [[ "$size" =~ ^[0-9]+$ ]]
-  [[ "$mtime" =~ ^[0-9]+$ ]]
-  [ "$mtime" -gt 0 ]
+  assert_regex "$size" '^[0-9]+$'
+  assert_regex "$mtime" '^[0-9]+$'
+  assert_gt "$mtime" 0
 }
 
 #@test "/etc/ld.so.cache exists after hook" {
