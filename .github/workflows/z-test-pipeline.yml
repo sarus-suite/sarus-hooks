@@ -64,7 +64,7 @@ jobs:
 
       - name: Patch ldcache test to use locally installed hook
         run: |
-          sed -i "s#/opt/sarus/bin/ldcache_hook#${HOOKS_DIR}/ldcache_hook#g" tests/test_ldcache_hook.bats
+          sed -i "s#/opt/sarus/bin/ldcache_hook#${HOOKS_BIN}/ldcache_hook#g" tests/test_ldcache_hook.bats
           # Sanity check
           grep -n 'ldcache_hook' tests/test_ldcache_hook.bats
         working-directory: ${{ env.TMP_DIR }}/sarus-hooks
