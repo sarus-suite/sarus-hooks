@@ -30,7 +30,6 @@ RUN set -eux; \
   ./bootstrap.sh --prefix=/opt/static --without-icu; \
   ./b2 -j"$(nproc)" \
       variant=release link=static runtime-link=shared threading=multi \
-      --without-icu \
       --with-filesystem --with-program_options --with-regex --with-system \
       install; \
   rm -rf /tmp/boost*
