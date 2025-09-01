@@ -19,6 +19,7 @@ setup() {
     "path": "/opt/sarus/bin/ldcache_hook",
     "env": ["LDCONFIG_PATH=/sbin/ldconfig"]
   },
+  "when": { "always": true },
   "stages": ["createContainer"]
 }
 EOF
@@ -63,7 +64,7 @@ helper_run_hooked_podman() {
 
   # Collect the hook summary
   local summary
-  summary=$(grep -m1 'summary rootfs=' "$HOOK_OUT")
+  summary="$(grep -m1 'summary rootfs=' "$HOOK_OUT" || true)"
 
   # Extract data fields
   local size mtime
