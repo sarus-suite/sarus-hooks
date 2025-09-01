@@ -1,6 +1,6 @@
 setup() {
-  load '../test/test_helper/bats-support/load'
-  load '../test/test_helper/bats-assert/load'
+  load 'test_helper/bats-support/load'
+  load 'test_helper/bats-assert/load'
   
   RUNTIME="${RUNTIME:-crun}"
   TEST_IMAGE="${TEST_IMAGE:-ubuntu:20.04}"
