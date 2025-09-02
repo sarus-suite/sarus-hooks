@@ -79,7 +79,7 @@ helper_run_hooked_podman() {
   assert_regex "$size" '^[0-9]+$'
   assert_regex "$mtime" '^[0-9]+$'
 
-  # a great-than check needs to pass by bash and then asserted
+  # A greater-than check needs to pass by bash and then asserted
   run bash -c "[[ $mtime -gt 0 ]]"
   assert_success
 }

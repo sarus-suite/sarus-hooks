@@ -25,26 +25,59 @@ jobs:
         run: ls -la
         working-directory: ${{ env.TMP_DIR }}
 
+      - name: Run build inside Podman container
+        run: |
+          podman run --rm \
+          -v "$PWD":"$PWD":Z \
+          -v "$TMP_DIR":"$TMP_DIR":Z \
+          -w "$PWD" \
+          --env TMP_DIR="$TMP_DIR" \
+          --env GITHUB_REF_NAME="$GITHUB_REF_NAME" \
+          ghcr.io/sarus-suite/sarus-hooks/ci-runner:latest \
+          bash -euxc '
+            # Building hooks
+            cd $TMP_DIR/sarus-hooks
+            ## ensure dependencies are pulled (including libsarus)
+            git submodule update --init --recursive --depth 1
+
+            cmake -S . -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_PREFIX_PATH=/opt/static \
+              -DBoost_ROOT=/opt/static \
+              -DBoost_DIR=/opt/static/lib/cmake/Boost-1.82.0 \
+              -DBoost_USE_STATIC_LIBS=ON \
+              -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
+              -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON \
+              -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
+              -DBUILD_DROPBEAR=0 \
+              -DENABLE_UNIT_TESTS=0 \
+              -DBUILD_SHARED_LIBS=OFF \
+              -DCMAKE_INSTALL_PREFIX=$TMP_DIR/podman-hooks
+            cmake --build build --parallel
+            cmake --install build
+           '
+        working-directory: ${{ env.TMP_DIR }}/sarus-hooks
+
+      - name: Export built hooks path and check
+        run: |
+          HOOKS_BIN=$TMP_DIR/podman-hooks/bin
+          echo "HOOKS_BIN=$HOOKS_BIN" >> $GITHUB_ENV
+          echo "Using hooks from: $HOOKS_BIN"
+          ls -l "$HOOKS_BIN"
+
       - name: Install Bats locally into TMP_DIR
         run: |
           git clone --depth 1 https://github.com/bats-core/bats-core.git "$TMP_DIR/bats-core"
           "$TMP_DIR/bats-core/install.sh" "$TMP_DIR/bats"
         working-directory: ${{ env.TMP_DIR }}
 
-      - name: Build and local install the hooks
-        run: |
-          # TODO: current dummy taking static bins
-          # TODO: build and local install from devcontainer
-          HOOKS_DIR="/scratch/local/podman-hooks/hooks.d"
-          echo "HOOKS_DIR=$HOOKS_DIR" >> $GITHUB_ENV
-          echo "Using Hooks directory: $HOOKS_DIR" 
-
-      - name: Simple podman run with default hooks
-        run: |
-          podman --hooks-dir $HOOKS_DIR run --rm alpine cat /mnt/os-release
-
       - name: Run Bats tests
         run: |
+          # patch binary path for hooks with actual built hooks dir
+          sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_glibc_hook.bats
+          sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_ldcache_hook.bats
+          sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_mount_hook.bats
+          # now run tests
           cd sarus-hooks
           $TMP_DIR/bats/bin/bats tests
         working-directory: ${{ env.TMP_DIR}}
