@@ -73,12 +73,12 @@ jobs:
 
       - name: Run Bats tests
         run: |
+          cd sarus-hooks
           # patch binary path for hooks with actual built hooks dir
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_glibc_hook.bats
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_ldcache_hook.bats
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_mount_hook.bats
           # now run tests
-          cd sarus-hooks
           $TMP_DIR/bats/bin/bats tests
         working-directory: ${{ env.TMP_DIR}}
 
