@@ -47,6 +47,7 @@ jobs:
               -DBoost_USE_STATIC_LIBS=ON \
               -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
               -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON \
+              -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
               -DBUILD_DROPBEAR=0 \
               -DENABLE_UNIT_TESTS=0 \
               -DBUILD_SHARED_LIBS=OFF \
@@ -55,6 +56,12 @@ jobs:
             cmake --install build
            '
         working-directory: ${{ env.TMP_DIR }}/sarus-hooks
+
+      - name: Verify hook runtime dependencies
+        run: |
+          set -euo pipefail
+          echo "ldd for ldcache_hook:"
+          ldd "$TMP_DIR/podman-hooks/bin/ldcache_hook" | tee "$TMP_DIR/ldd_ldcache_hook.txt"
 
       - name: Install Bats locally
         run: |
