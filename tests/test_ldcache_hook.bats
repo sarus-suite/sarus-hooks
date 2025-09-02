@@ -16,7 +16,7 @@ setup() {
 {
   "version": "1.0.0",
   "hook": {
-    "path": "/opt/sarus/bin/ldcache_hook",
+    "path": "/scratch/local/podman-hooks/bin/ldcache_hook",
     "env": ["LDCONFIG_PATH=/sbin/ldconfig"]
   },
   "when": { "always": true },
