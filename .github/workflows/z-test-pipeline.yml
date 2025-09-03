@@ -40,6 +40,14 @@ jobs:
             git submodule update --init --recursive --depth 1
 
             cmake -S . -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_PREFIX_PATH=/opt/static \
+              -DBoost_ROOT=/opt/static \
+              -DBoost_DIR=/opt/static/lib/cmake/Boost-1.82.0 \
+              -DBoost_USE_STATIC_LIBS=ON \
+              -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
+              -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON \
+              -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
               -DBUILD_DROPBEAR=0 \
               -DENABLE_UNIT_TESTS=0 \
               -DBUILD_SHARED_LIBS=OFF \
@@ -48,6 +56,12 @@ jobs:
             cmake --install build
            '
         working-directory: ${{ env.TMP_DIR }}/sarus-hooks
+
+      - name: Verify hook runtime dependencies
+        run: |
+          set -euo pipefail
+          echo "ldd for ldcache_hook:"
+          ldd "$TMP_DIR/podman-hooks/bin/ldcache_hook" | tee "$TMP_DIR/ldd_ldcache_hook.txt"
 
       - name: Install Bats locally
         run: |
@@ -64,7 +78,8 @@ jobs:
 
       - name: Patch ldcache test to use locally installed hook
         run: |
-          sed -i "s#/opt/sarus/bin/ldcache_hook#${HOOKS_DIR}/ldcache_hook#g" tests/test_ldcache_hook.bats
+          # patch test with hook path
+          sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_ldcache_hook.bats
           # Sanity check
           grep -n 'ldcache_hook' tests/test_ldcache_hook.bats
         working-directory: ${{ env.TMP_DIR }}/sarus-hooks
