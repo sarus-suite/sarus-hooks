@@ -38,6 +38,8 @@ void PMIxHook::activate() {
 }
 
 bool PMIxHook::checkRequirements() {
+    log("Checking hook requirements...", libsarus::LogLevel::INFO);
+    
     // Check if 'scontrol' is available.
     try {
         libsarus::process::executeCommand("which scontrol");
@@ -46,12 +48,14 @@ bool PMIxHook::checkRequirements() {
         return false;
     }
 
-    log("Requirements satisfied", libsarus::LogLevel::INFO);
+    log("Checked hook requirements", libsarus::LogLevel::INFO);
     
     return true;
 }
 
 bool PMIxHook::checkPMIxSupport() {
+    log("Checking PMIx support...", libsarus::LogLevel::INFO);
+
     // Check if SLURM_MPI_TYPE is "pmix"-like.
     try {
         auto envSlurmMPIType = libsarus::environment::getVariable("SLURM_MPI_TYPE");
@@ -65,21 +69,40 @@ bool PMIxHook::checkPMIxSupport() {
     }
 
     // Check if the environment actually contain "PMIX_*" variables
+    std::string output;
+
     try {
-        libsarus::process::executeCommand("compgen -e \"PMIX_\"");
+        output = libsarus::process::executeCommand("env");
     } catch (...) {
+        log("Cannot retrieve environment variables", libsarus::LogLevel::INFO);
+        return false;
+    }
+
+    auto ss = std::stringstream{output};
+    auto line = std::string{};
+
+    bool hasPMIxVar = false;
+    while (std::getline(ss, line)) {
+        if (line.substr(0, 5) == "PMIX_") {
+            hasPMIxVar = true;
+            break;
+        }
+    }
+
+    if (!hasPMIxVar) {
         log("No PMIX_* environment variable found", libsarus::LogLevel::INFO);
         return false;
     }
 
-    log("PMIx support confirmed", libsarus::LogLevel::INFO);
+    log("Checked PMIx support", libsarus::LogLevel::INFO);
 
     return true;
 }
 
 void PMIxHook::parseConfigJSONOfBundle() {
-    // Parse the bundle's JSON config. Code stolen from the old Sarus MPI hook.
+    log("Parsing bundle config JSON...", libsarus::LogLevel::INFO);
 
+    // Parse the bundle's JSON config. Code stolen from the old Sarus MPI hook.
     auto containerState = libsarus::hook::parseStateOfContainerFromStdin();
     auto json = libsarus::json::read(containerState.bundle() / "config.json");
     libsarus::hook::applyLoggingConfigIfAvailable(json);
@@ -88,14 +111,20 @@ void PMIxHook::parseConfigJSONOfBundle() {
     if (!pathRootFS.is_absolute())
         pathRootFS = containerState.bundle() / pathRootFS;
 
+    log(boost::format("Parsed: pathRootFS: %s") % pathRootFS, libsarus::LogLevel::INFO);
+
     uid_t uidOfUser = json["process"]["user"]["uid"].GetInt();
     gid_t gidOfUser = json["process"]["user"]["gid"].GetInt();
     userIdentity = libsarus::UserIdentity(uidOfUser, gidOfUser, {});
 
-    log(boost::format("Bundle config parsed (pathRootFS: %s)") % pathRootFS.c_str(), libsarus::LogLevel::INFO);
+    log(boost::format("Parsed: uid: %s, gid: %s") % uidOfUser % gidOfUser, libsarus::LogLevel::INFO);
+
+    log("Parsed bundle config JSON", libsarus::LogLevel::INFO);
 }
 
 void PMIxHook::getSlurmIDs() {
+    log("Getting Slurm IDs...", libsarus::LogLevel::INFO);
+
     try {
         envSlurmJobUID = libsarus::environment::getVariable("SLURM_JOB_UID");
     } catch (...) {
@@ -113,10 +142,12 @@ void PMIxHook::getSlurmIDs() {
         SARUS_THROW_ERROR("Undefined SLURM_JOB_ID or SLURM_STEP_ID");
     }
 
-    log("Slurm IDs retrieved", libsarus::LogLevel::INFO);
+    log("Got Slurm IDs", libsarus::LogLevel::INFO);
 }
 
 void PMIxHook::derivePathsFromScontrol() {
+    log("Deriving paths from 'scontrol'...", libsarus::LogLevel::INFO);
+
     // Derive SlurmdSpoolDir and TmpFS from "scontrol".
     std::string output;
 
@@ -152,10 +183,12 @@ void PMIxHook::derivePathsFromScontrol() {
     if (!boost::filesystem::is_directory(pathTmpFS, ec)) 
         SARUS_THROW_ERROR("TmpFS is not a directory");
 
-    log("Paths derived from \"scontrol\"", libsarus::LogLevel::INFO);
+    log("Derived paths from 'scontrol'", libsarus::LogLevel::INFO);
 }
 
 void PMIxHook::mountPMIxDirectories() {
+    log("Mounting PMIx directories...", libsarus::LogLevel::INFO);
+
     int mount_flags = MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_PRIVATE;
 
     // Mount "spmix_appdir".
@@ -169,10 +202,13 @@ void PMIxHook::mountPMIxDirectories() {
     pathAppdirJobStep += ("." + envSlurmStepID);
 
     try {
-        if (!envSlurmJobUID.empty() && boost::filesystem::is_directory(pathAppdirUIDJobStep)) 
+        if (!envSlurmJobUID.empty() && boost::filesystem::is_directory(pathAppdirUIDJobStep)) {
             libsarus::mount::validatedBindMount(pathAppdirUIDJobStep, pathAppdirUIDJobStep, userIdentity, pathRootFS, mount_flags);
-        else
+            log(boost::format("Mounted: %s") % pathAppdirUIDJobStep, libsarus::LogLevel::INFO);
+        } else {
             libsarus::mount::validatedBindMount(pathAppdirJobStep, pathAppdirJobStep, userIdentity, pathRootFS, mount_flags);
+            log(boost::format("Mounted: %s") % pathAppdirJobStep, libsarus::LogLevel::INFO);
+        }
     } catch (...) {
         // Respecfully ignore. ("nofail")
     }
@@ -180,9 +216,12 @@ void PMIxHook::mountPMIxDirectories() {
     // Mount "pmix".
     auto pathPMIxJobStep = pathSlurmdSpoolDir / "pmix";
     pathPMIxJobStep += ("." + envSlurmJobID);
-    libsarus::mount::validatedBindMount(pathPMIxJobStep, pathPMIxJobStep, userIdentity, pathRootFS, mount_flags);
+    pathPMIxJobStep += ("." + envSlurmStepID);
 
-    log("PMIx directories mounted", libsarus::LogLevel::INFO);
+    libsarus::mount::validatedBindMount(pathPMIxJobStep, pathPMIxJobStep, userIdentity, pathRootFS, mount_flags);
+    log(boost::format("Mounted: %s") % pathPMIxJobStep, libsarus::LogLevel::INFO);
+
+    log("Mounted PMIx directories", libsarus::LogLevel::INFO);
 }
 
 void PMIxHook::log(const boost::format& message, libsarus::LogLevel level) const {
