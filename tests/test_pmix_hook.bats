@@ -129,7 +129,7 @@ teardown() {
   rm -rf ${SPMIX_APPDIR_NO_UID_DIR}
 }
 
-@test "no TmpFS (should fail)" {
+@test "null TmpFS (expect crash)" {
   # Prepare mock 'scontrol' with (null) TmpFS
   SCONTROL_NULL_DIR=$(mktemp -d)
   SCONTROL_NULL=${SCONTROL_NULL_DIR}/scontrol
