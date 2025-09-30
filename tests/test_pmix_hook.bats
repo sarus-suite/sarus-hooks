@@ -37,6 +37,7 @@ EOS
   # Derive SlurmdSpoolDir and TmpFS paths
   scontrol show config | awk '/^SlurmdSpoolDir|^TmpFS/ {print $3}' | \
     { read -r SLURMD_SPOOL_DIR; read -r SLURM_TMPFS; } || :
+  export SLURM_TMPFS
 
   # Prepare mock PMIx directories
   SLURM_JOB_UID=0
