@@ -45,7 +45,9 @@ EOS
   SLURM_STEP_ID=2
   
   export PMIX_DIR=${SLURMD_SPOOL_DIR}/pmix.${SLURM_JOB_ID}.${SLURM_STEP_ID}
-  mkdir -p ${PMIX_DIR}
+  sudo mkdir -p ${PMIX_DIR}
+  sudo chown $(whoami) ${PMIX_DIR}
+  sudo chgrp root ${PMIX_DIR}
 
   # Export test environment variables
   export SLURM_MPI_TYPE=pmix 
