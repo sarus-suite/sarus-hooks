@@ -18,7 +18,8 @@ setup() {
     echo "$0: info: scontrol not found. installing scontrol-mock..."
 
     TMP_BIN_DIR=$(mktemp -d)
-    cat <<EOS >${TMP_BIN_DIR}/scontrol
+    SCONTROL_MOCK=${TMP_BIN_DIR}/scontrol
+    cat <<EOS >${SCONTROL_MOCK}
 #!/bin/bash
 
 if [[ "\$1" == "show" ]] && [[ "\$2" == "config" ]]; then
@@ -30,7 +31,7 @@ Slurmctld(primary) at zinal-slurmctl is UP
 EOF
 fi
 EOS
-    chmod +x ${TMP_BIN_DIR}/scontrol
+    chmod +x ${SCONTROL_MOCK}
     export PATH=${TMP_BIN_DIR}:${PATH}
   fi
 
@@ -71,11 +72,7 @@ EOF
 teardown() {
   kill "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
   wait "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
-  rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}" "${PMIX_DIR}"
-
-  if [[ -v TMP_BIN_DIR ]]; then
-    rm -rf "${TMP_BIN_DIR}"
-  fi
+  rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}" "${PMIX_DIR}" "${TMP_BIN_DIR}"
 }
 
 @test "pmix_hook binds directory (nofail spmix_appdir)" {
@@ -125,4 +122,40 @@ teardown() {
             ([ -d ${PMIX_DIR} ] || ! echo \"error: no pmix dir\")"
 
   rm -rf ${SPMIX_APPDIR_NO_UID_DIR}
+}
+
+@test "no TmpFS (should fail)" {
+  # Prepare mock 'scontrol' with (null) TmpFS
+  SCONTROL_NULL_DIR=$(mktemp -d)
+  SCONTROL_NULL=${SCONTROL_NULL_DIR}/scontrol
+
+  cat <<EOS >${SCONTROL_NULL}
+#!/bin/bash
+
+if [[ "\$1" == "show" ]] && [[ "\$2" == "config" ]]; then
+  cat <<EOF
+EOS
+  scontrol show config >>${SCONTROL_NULL}
+  sed 's/^TmpFS.*/TmpFS = (null)/g' -i ${SCONTROL_NULL}
+  cat <<EOS >>${SCONTROL_NULL}
+EOF
+fi
+EOS
+
+  chmod +x ${SCONTROL_NULL}
+  export PATH=${SCONTROL_NULL_DIR}:${PATH}
+
+  ! podman --runtime=crun \
+    --hooks-dir "${TMP_HOOKS_DIR}" \
+    run --rm \
+      --annotation run.oci.hooks.stdout="${HOOK_OUT}" \
+      --annotation run.oci.hooks.stderr="${HOOK_ERR}" \
+      alpine sh -c "([ -d ${SPMIX_APPDIR_NO_UID_DIR} ] || ! echo \"error: no spmix_appdir\") && \
+            ([ -d ${PMIX_DIR} ] || ! echo \"error: no pmix dir\")"
+
+  if [[ -v SCONTROL_MOCK} ]]; then
+    mv ${SCONTROL_MOCK_BAK} ${SCONTROL_MOCK}
+  fi
+
+  rm -rf "${SCONTROL_NULL_DIR}"
 }
