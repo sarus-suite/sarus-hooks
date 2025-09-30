@@ -39,12 +39,13 @@ EOS
     { read -r SLURMD_SPOOL_DIR; read -r SLURM_TMPFS; } || :
   export SLURM_TMPFS
 
-  # Prepare mock PMIx directories
+  # Prepare mock PMIx directory
   SLURM_JOB_UID=0
   SLURM_JOB_ID=1
   SLURM_STEP_ID=2
-  PMIX_DIR=$SLURMD_SPOOL_DIR/pmix.${SLURM_JOB_ID}.${SLURM_STEP_ID}
-  mkdir -p ${PMIX_DIR}
+  
+  export PMIX_DIR=${SLURMD_SPOOL_DIR}/pmix.${SLURM_JOB_ID}.${SLURM_STEP_ID}
+  sudo mkdir -p ${PMIX_DIR}
 
   # Export test environment variables
   export SLURM_MPI_TYPE=pmix 
