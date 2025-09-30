@@ -34,11 +34,15 @@ EOS
     export PATH=${TMP_BIN_DIR}:${PATH}
   fi
 
+  # Derive SlurmdSpoolDir and TmpFS paths
+  scontrol show config | awk '/^SlurmdSpoolDir|^TmpFS/ {print $3}' | \
+    { read -r SLURMD_SPOOL_DIR; read -r SLURM_TMPFS; } || :
+
   # Prepare mock PMIx directories
   SLURM_JOB_UID=0
   SLURM_JOB_ID=1
   SLURM_STEP_ID=2
-  PMIX_DIR=/tmp/spool/slurmd/pmix.${SLURM_JOB_ID}.${SLURM_STEP_ID}
+  PMIX_DIR=$SLURMD_SPOOL_DIR/pmix.${SLURM_JOB_ID}.${SLURM_STEP_ID}
   mkdir -p ${PMIX_DIR}
 
   # Export test environment variables
@@ -70,7 +74,7 @@ teardown() {
 }
 
 @test "pmix_hook binds directory (nofail spmix_appdir)" {
-  SPMIX_APPDIR_UID_DIR=/tmp/spmix_appdir_${SLURM_JOB_UID}_${SLURM_JOB_ID}.${SLURM_STEP_ID}
+  SPMIX_APPDIR_UID_DIR=${SLURM_TMPFS}/spmix_appdir_${SLURM_JOB_UID}_${SLURM_JOB_ID}.${SLURM_STEP_ID}
   rm -rf ${SPMIX_APPDIR_UID_DIR} || true
   export SLURM_JOB_UID=${SLURM_JOB_UID}
 
@@ -83,7 +87,7 @@ teardown() {
 }
 
 @test "pmix_hook binds directory (with SLURM_JOB_UID)" {
-  SPMIX_APPDIR_UID_DIR=/tmp/spmix_appdir_${SLURM_JOB_UID}_${SLURM_JOB_ID}.${SLURM_STEP_ID}
+  SPMIX_APPDIR_UID_DIR=${SLURM_TMPFS}/spmix_appdir_${SLURM_JOB_UID}_${SLURM_JOB_ID}.${SLURM_STEP_ID}
   mkdir -p ${SPMIX_APPDIR_UID_DIR}
   chown $(whoami) ${SPMIX_APPDIR_UID_DIR}
   export SLURM_JOB_UID=${SLURM_JOB_UID}
@@ -100,7 +104,7 @@ teardown() {
 }
 
 @test "pmix_hook binds directory (no SLURM_JOB_UID)" {
-  SPMIX_APPDIR_NO_UID_DIR=/tmp/spmix_appdir_${SLURM_JOB_ID}.${SLURM_STEP_ID}
+  SPMIX_APPDIR_NO_UID_DIR=${SLURM_TMPFS}/spmix_appdir_${SLURM_JOB_ID}.${SLURM_STEP_ID}
   mkdir -p ${SPMIX_APPDIR_NO_UID_DIR}
   chown $(whoami) ${SPMIX_APPDIR_NO_UID_DIR}
   unset SLURM_JOB_UID
