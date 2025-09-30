@@ -14,7 +14,7 @@ setup() {
   HOOK_ERR_PID=$!
 
   # Prepare mock 'scontrol'
-  if true; then #! which scontrol >/dev/null 2>&1; then
+  if ! which scontrol >/dev/null 2>&1; then
     echo "$0: info: scontrol not found. installing scontrol-mock..."
 
     TMP_BIN_DIR=$(mktemp -d)
@@ -90,8 +90,9 @@ teardown() {
 
 @test "pmix_hook binds directory (with SLURM_JOB_UID)" {
   SPMIX_APPDIR_UID_DIR=${SLURM_TMPFS}/spmix_appdir_${SLURM_JOB_UID}_${SLURM_JOB_ID}.${SLURM_STEP_ID}
-  mkdir -p ${SPMIX_APPDIR_UID_DIR}
-  chown $(whoami) ${SPMIX_APPDIR_UID_DIR}
+  sudo mkdir -p ${SPMIX_APPDIR_UID_DIR}
+  sudo chown $(whoami) ${SPMIX_APPDIR_UID_DIR}
+  sudo chgrp root ${SPMIX_APPDIR_UID_DIR}
   export SLURM_JOB_UID=${SLURM_JOB_UID}
 
   podman --runtime=crun \
@@ -107,8 +108,9 @@ teardown() {
 
 @test "pmix_hook binds directory (no SLURM_JOB_UID)" {
   SPMIX_APPDIR_NO_UID_DIR=${SLURM_TMPFS}/spmix_appdir_${SLURM_JOB_ID}.${SLURM_STEP_ID}
-  mkdir -p ${SPMIX_APPDIR_NO_UID_DIR}
-  chown $(whoami) ${SPMIX_APPDIR_NO_UID_DIR}
+  sudo mkdir -p ${SPMIX_APPDIR_NO_UID_DIR}
+  sudo chown $(whoami) ${SPMIX_APPDIR_NO_UID_DIR}
+  sudo chgrp root ${SPMIX_APPDIR_NO_UID_DIR}
   unset SLURM_JOB_UID
 
   podman --runtime=crun \
