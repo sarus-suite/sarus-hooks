@@ -69,7 +69,8 @@ EOF
 }
 
 teardown() {
-  kill -9 "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
+  kill "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
+  wait "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
   rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}" "${PMIX_DIR}"
 
   if [[ -v TMP_BIN_DIR ]]; then
