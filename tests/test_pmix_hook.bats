@@ -14,8 +14,25 @@ setup() {
   HOOK_ERR_PID=$!
 
   # Prepare mock 'scontrol'
-  TMP_BIN_DIR=$(mktemp -d)
-  cp ${BATS_TEST_DIRNAME}/assets/scontrol-mock ${TMP_BIN_DIR}/scontrol
+  if ! which scontrol >/dev/null 2>&1; then
+    echo "$0: info: scontrol not found. installing scontrol-mock..."
+
+    TMP_BIN_DIR=$(mktemp -d)
+    cat <<EOS >${TMP_BIN_DIR}/scontrol
+#!/bin/bash
+
+if [[ "\$1" == "show" ]] && [[ "\$2" == "config" ]]; then
+  cat <<EOF
+Configuration data as of 2025-09-16T10:59:04
+SlurmdSpoolDir          = /tmp/spool/slurmd
+TmpFS                   = /tmp
+Slurmctld(primary) at zinal-slurmctl is UP
+EOF
+fi
+EOS
+    chmod +x ${TMP_BIN_DIR}/scontrol
+    export PATH=${TMP_BIN_DIR}:${PATH}
+  fi
 
   # Prepare mock PMIx directories
   SLURM_JOB_UID=0
@@ -25,7 +42,6 @@ setup() {
   mkdir -p ${PMIX_DIR}
 
   # Export test environment variables
-  export PATH=${TMP_BIN_DIR}:${PATH}
   export SLURM_MPI_TYPE=pmix 
   export PMIX_WHATEVER=yes 
   export SLURM_JOB_ID=${SLURM_JOB_ID}
@@ -46,7 +62,11 @@ EOF
 
 teardown() {
   kill "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
-  rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}" "${TMP_BIN_DIR}" "${PMIX_DIR}"
+  rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}" "${PMIX_DIR}"
+
+  if [[ -v TMP_BIN_DIR ]]; then
+    rm -rf "${TMP_BIN_DIR}"
+  fi
 }
 
 @test "pmix_hook binds directory (nofail spmix_appdir)" {
@@ -65,6 +85,7 @@ teardown() {
 @test "pmix_hook binds directory (with SLURM_JOB_UID)" {
   SPMIX_APPDIR_UID_DIR=/tmp/spmix_appdir_${SLURM_JOB_UID}_${SLURM_JOB_ID}.${SLURM_STEP_ID}
   mkdir -p ${SPMIX_APPDIR_UID_DIR}
+  chown $(whoami) ${SPMIX_APPDIR_UID_DIR}
   export SLURM_JOB_UID=${SLURM_JOB_UID}
 
   podman --runtime=crun \
@@ -81,6 +102,7 @@ teardown() {
 @test "pmix_hook binds directory (no SLURM_JOB_UID)" {
   SPMIX_APPDIR_NO_UID_DIR=/tmp/spmix_appdir_${SLURM_JOB_ID}.${SLURM_STEP_ID}
   mkdir -p ${SPMIX_APPDIR_NO_UID_DIR}
+  chown $(whoami) ${SPMIX_APPDIR_NO_UID_DIR}
   unset SLURM_JOB_UID
 
   podman --runtime=crun \
