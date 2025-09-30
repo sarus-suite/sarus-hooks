@@ -14,7 +14,7 @@ setup() {
   HOOK_ERR_PID=$!
 
   # Prepare mock 'scontrol'
-  if ! which scontrol >/dev/null 2>&1; then
+  if true; then #! which scontrol >/dev/null 2>&1; then
     echo "$0: info: scontrol not found. installing scontrol-mock..."
 
     TMP_BIN_DIR=$(mktemp -d)
@@ -45,7 +45,7 @@ EOS
   SLURM_STEP_ID=2
   
   export PMIX_DIR=${SLURMD_SPOOL_DIR}/pmix.${SLURM_JOB_ID}.${SLURM_STEP_ID}
-  sudo mkdir -p ${PMIX_DIR}
+  mkdir -p ${PMIX_DIR}
 
   # Export test environment variables
   export SLURM_MPI_TYPE=pmix 
