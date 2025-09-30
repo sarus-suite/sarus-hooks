@@ -72,7 +72,12 @@ EOF
 teardown() {
   kill "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
   wait "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
-  rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}" "${PMIX_DIR}" "${TMP_BIN_DIR}"
+
+  rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}" "${PMIX_DIR}"
+
+  if [[ -v TMP_BIN_DIR ]]; then
+    rm -rf "${TMP_BIN_DIR}"
+  fi
 }
 
 @test "pmix_hook binds directory (nofail spmix_appdir)" {
