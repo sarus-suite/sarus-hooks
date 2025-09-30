@@ -5,11 +5,11 @@
 #include <boost/format.hpp>
 
 #include "libsarus/Logger.hpp"
-#include "libsarus/Error.hpp"
-#include "libsarus/Utility.hpp"
-#include "libsarus/Process.hpp"
-#include "libsarus/HookUtility.hpp"
-#include "libsarus/Json.hpp"
+#include "libsarus/errorHandling.hpp"
+#include "libsarus/utility/hook.hpp"
+#include "libsarus/utility/json.hpp"
+#include "libsarus/utility/process.hpp"
+#include "libsarus/utility/logging.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     // Parse container state + bundle config to enable standard logging
     auto state = libsarus::hook::parseStateOfContainerFromStdin();
     auto json = libsarus::json::read(state.bundle() / "config.json");
-    libsarus::hook::applyLoggingConfigIfAvailable(json);
+    libsarus::logging::applyLoggingConfigIfAvailable(json);
     log("MPS hook invoked");
 
     // Reading the action
