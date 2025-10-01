@@ -5,11 +5,8 @@
 #include <boost/format.hpp>
 
 #include "libsarus/Logger.hpp"
-#include "libsarus/errorHandling.hpp"
-#include "libsarus/utility/hook.hpp"
-#include "libsarus/utility/json.hpp"
-#include "libsarus/utility/process.hpp"
-#include "libsarus/utility/logging.hpp"
+#include "libsarus/Error.hpp"
+#include "libsarus/Utility.hpp"
 
 namespace fs = boost::filesystem;
 
