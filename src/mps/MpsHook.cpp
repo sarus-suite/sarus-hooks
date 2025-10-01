@@ -19,10 +19,10 @@ static std::string getEnvOr(const char* key, const std::string& def="") {
     return p ? std::string{p} : def;
 }
 
-static bool mpsRunning() {
-    int status = libsarus::process::executeCommand("pidof nvidia-cuda-mps-control");
-    return status == 0;
-}
+//static bool mpsRunning() {
+//    int status = libsarus::process::executeCommand("pidof nvidia-cuda-mps-control");
+//    return status == 0;
+//}
 
 static void ensureDir(const fs::path& p) {
     if(!fs::exists(p)) {
@@ -57,24 +57,24 @@ int main(int argc, char** argv) {
     ensureDir(fs::path(pipeDir));
 
     if(action == "start") {
-        if(mpsRunning()) {
-            log("MPS already running; skipping start", libsarus::LogLevel::INFO);
-            return 0;
-        }
+//        if(mpsRunning()) {
+//            log("MPS already running; skipping start", libsarus::LogLevel::INFO);
+//            return 0;
+//        }
         std::string cmd = "CUDA_MPS_PIPE_DIRECTORY=\"" + pipeDir + "\" nvidia-cuda-mps-control -d";
         log("Starting MPS: " + cmd, libsarus::LogLevel::INFO);
         std::string out = libsarus::process::executeCommand(cmd);
         log("Started MPS", libsarus::LogLevel::INFO);
     }
     else if(action == "stop") {
-        if(!mpsRunning()) {
-            log("MPS not running; nothing to stop", libsarus::LogLevel::INFO);
-            return 0;
-        }
-        std::string cmd = "CUDA_MPS_PIPE_DIRECTORY=\"" + pipeDir + "\" sh -lc 'echo quit | nvidia-cuda-mps-control'";
-        log("Stopping MPS", libsarus::LogLevel::INFO);
-        std::string out = libsarus::process::executeCommand(cmd);
-        log("Stopped MPS", libsarus::LogLevel::INFO);
+//        if(!mpsRunning()) {
+//            log("MPS not running; nothing to stop", libsarus::LogLevel::INFO);
+//            return 0;
+//        }
+//        std::string cmd = "CUDA_MPS_PIPE_DIRECTORY=\"" + pipeDir + "\" sh -lc 'echo quit | nvidia-cuda-mps-control'";
+//        log("Stopping MPS", libsarus::LogLevel::INFO);
+//        std::string out = libsarus::process::executeCommand(cmd);
+//        log("Stopped MPS", libsarus::LogLevel::INFO);
     }
     else {
         log("Unknown --action= " + action, libsarus::LogLevel::ERROR);
