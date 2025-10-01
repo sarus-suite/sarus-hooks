@@ -20,7 +20,7 @@ static std::string getEnvOr(const char* key, const std::string& def="") {
 }
 
 static bool mpsRunning() {
-    int status = libsarus::process::executeCommandWithStatus("pidof nvidia-cuda-mps-control");
+    int status = libsarus::process::executeCommand("pidof nvidia-cuda-mps-control");
     return status == 0;
 }
 
@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     // Parse container state + bundle config to enable standard logging
     auto state = libsarus::hook::parseStateOfContainerFromStdin();
     auto json = libsarus::json::read(state.bundle() / "config.json");
-    libsarus::logging::applyLoggingConfigIfAvailable(json);
+    libsarus::hook::applyLoggingConfigIfAvailable(json);
     log("MPS hook invoked");
 
     // Reading the action
@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     // From hook configuration env
     std::string pipeDir = getEnvOr("CUDA_MPS_PIPE_DIRECTORY", "/var/run/nvidia-mps");
     if(pipeDir.empty()){
-        log("CUDA_MPS_PIPE_DIRECTORY is empty, nothing to do", libsarus::LogLevel::WARNING);
+        log("CUDA_MPS_PIPE_DIRECTORY is empty, nothing to do", libsarus::LogLevel::WARN);
         return 0;
     }
 
