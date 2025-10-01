@@ -1,0 +1,22 @@
+{
+  "cdiVersion": "0.5.0",
+  "kind": "cscs.ch/service",
+  "devices": [
+    {
+      "name": "mps",
+      "containerEdits": {
+        "env": [
+          "CUDA_MPS_PIPE_DIRECTORY=/tmp/nvidia-mps"
+        ],
+        "mounts": [
+          {
+            "hostPath": "/tmp/nvidia-mps",
+            "containerPath": "/tmp/nvidia-mps",
+            "options": ["rbind", "rw"]
+          }
+        ]
+      }
+    }
+  ]
+}
+

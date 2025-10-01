@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "hook": {
+    "path": "/tmp/hooks.d/mps_hook",
+    "args": ["mps_hook", "--action=start"],
+    "env": [
+      "CUDA_MPS_PIPE_DIRECTORY=/tmp/nvidia-mps"
+    ]
+  },
+  "when": {
+    "annotations": {
+      "^com\\.hooks\\.mps$": "*yes$"
+    }
+  },
+  "stages": ["prestart"]
+}
+
