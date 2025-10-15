@@ -207,21 +207,11 @@ void PMIxHook::mountPMIxDirectories() {
     pathAppdirJobStep += ("." + envSlurmStepID);
 
     if (!envSlurmJobUID.empty() && boost::filesystem::is_directory(pathAppdirUIDJobStep)) {
-        try {
-            libsarus::mount::validatedBindMount(pathAppdirUIDJobStep, pathAppdirUIDJobStep, userIdentity, pathRootFS, mount_flags);
-            log(boost::format("Mounted spmix_appdir: %s") % pathAppdirUIDJobStep, libsarus::LogLevel::INFO);
-        } catch (...) {
-            // Respecfully ignore. ("nofail")
-            log(boost::format("Cannot mount spmix_appdir: %s") % pathAppdirUIDJobStep, libsarus::LogLevel::INFO);
-        }
+        libsarus::mount::validatedBindMount(pathAppdirUIDJobStep, pathAppdirUIDJobStep, userIdentity, pathRootFS, mount_flags);
+        log(boost::format("Mounted spmix_appdir: %s") % pathAppdirUIDJobStep, libsarus::LogLevel::INFO);
     } else {
-        try {
-            libsarus::mount::validatedBindMount(pathAppdirJobStep, pathAppdirJobStep, userIdentity, pathRootFS, mount_flags);
-            log(boost::format("Mounted spmix_appdir: %s") % pathAppdirJobStep, libsarus::LogLevel::INFO);
-        } catch (...) {
-            // Respecfully ignore. ("nofail")
-            log(boost::format("Cannot mount spmix_appdir: %s") % pathAppdirJobStep, libsarus::LogLevel::INFO);
-        }
+        libsarus::mount::validatedBindMount(pathAppdirJobStep, pathAppdirJobStep, userIdentity, pathRootFS, mount_flags);
+        log(boost::format("Mounted spmix_appdir: %s") % pathAppdirJobStep, libsarus::LogLevel::INFO);
     }
 
     // Mount "pmix".
