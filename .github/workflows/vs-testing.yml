@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: zinal-gwalee
+    runs-on: zinal
     steps:
       - name: Setup temporary dir
         run: |
