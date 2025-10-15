@@ -32,7 +32,6 @@ teardown() {
 
 @test "mount_hook binds directory" {
   run podman --hooks-dir "${TMP_HOOKS_DIR}" run --rm alpine sh -c "cat /mnt/hostbind/sarus-hook-test-file.txt"
-  echo "$output"
   [ "$status" -eq 0 ]
   [ "$output" = "test-file" ]
 }
