@@ -166,16 +166,20 @@ teardown() {
   # TODO: simulate PMIX_MCA_... creation
   srun -n2 --mpi pmix bash -c '\
     TMP_ENV_FILE=$(mktemp); \
-    trap EXIT "rm $TMP_ENV_FILE"; \
-    env | grep "^PMIX_" > $TMP_ENV_FILE; \
-    echo PMIX_MCA_gds=shmem2,hash >> $TMP_ENV_FILE; \
-    echo PMIX_MCA_psec=munge,native >> $TMP_ENV_FILE; \
-    podman --module='"${TMP_MODULE}"' --runtime=crun \
+    trap "rm $TMP_ENV_FILE" EXIT; \
+    echo [containers] >> $TMP_ENV_FILE; \
+    echo env=[ >> $TMP_ENV_FILE; \
+    env | grep "^PMIX_" | sed '"'"'s/^\(.*\)$/"\1",/g'"'"' >> $TMP_ENV_FILE; \
+    [ ! -v PMIX_PTL_MODULE ] || echo \"PMIX_MCA_gds=$PMIX_PTL_MODULE\", >> $TMP_ENV_FILE; \
+    [ ! -v PMIX_SECURITY_MODE ] || echo \"PMIX_MCA_psec=$PMIX_SECURITY_MODE\", >> $TMP_ENV_FILE; \
+    [ ! -v PMIX_GDS_MODULE ] || echo \"PMIX_MCA_gds=$PMIX_GDS_MODULE\", >> $TMP_ENV_FILE; \
+    echo ] >> $TMP_ENV_FILE; \
+    cat $TMP_ENV_FILE; \
+    podman --module='"${TMP_MODULE}"' --module=$TMP_ENV_FILE --runtime=crun \
       --hooks-dir '"${TMP_HOOKS_DIR}"' \
       run --rm \
-        --env-file=$TMP_ENV_FILE \
         quay.io/madeeks/osu-mb:7.3-ompi5.0.5-ofi1.15.0-x86_64 \
-          bash -c '"'"'./pt2pt/osu_bw -m 8'"'"' '
+          bash -c '"'"'env | grep ^PMIX_; ./pt2pt/osu_bw -m 8'"'"' '
 }
 
 @test "pmix_hook skip if TmpFS=(null)" {
