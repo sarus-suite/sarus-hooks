@@ -165,10 +165,10 @@ teardown() {
   # Note: OSU pt2pt doesn't run unless there are two distinct MPI ranks
   srun -n2 --mpi pmix bash -c '\
     TMP_ENV_FILE=$(mktemp); \
+    trap EXIT "rm $TMP_ENV_FILE"; \
     env | grep "^PMIX_" > $TMP_ENV_FILE; \
     echo PMIX_MCA_gds=shmem2,hash >> $TMP_ENV_FILE; \
     echo PMIX_MCA_psec=munge,native >> $TMP_ENV_FILE; \
-    trap EXIT "rm $TMP_ENV_FILE"; \
     podman --module='"${TMP_MODULE}"' --runtime=crun \
       --hooks-dir '"${TMP_HOOKS_DIR}"' \
       run --rm \
