@@ -78,7 +78,7 @@ jobs:
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_glibc_hook.bats
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_ldcache_hook.bats
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_mount_hook.bats
-          sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_pmix_hook.bats
+          sed -i "s#/scratch/shared/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_pmix_hook.bats
           # now run tests
           $TMP_DIR/bats/bin/bats tests
         working-directory: ${{ env.TMP_DIR}}
