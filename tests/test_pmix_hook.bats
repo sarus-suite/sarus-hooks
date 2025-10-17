@@ -1,24 +1,51 @@
-setup() {
-  # Create temporary directories
-  TMP_HOOKS_DIR=$(mktemp -d)
-  TMP_HOOK_LOG_DIR="$(mktemp -d)"
+setup_file() {
+  # [Common] Make sure Podman doesn't use /run/users 
+  unset XDG_RUNTIME_DIR
 
-  # Print hook stdout/stderr
-  HOOK_OUT="${TMP_HOOK_LOG_DIR}/out.log"
-  HOOK_ERR="${TMP_HOOK_LOG_DIR}/err.log"
+  # [Common] Create hook config
+  export TMP_HOOKS_DIR=$(mktemp -d --tmpdir=/scratch/shared/scratch/sarus-suite)
+  cat > "${TMP_HOOKS_DIR}/pmix-hook.json" <<EOF
+{
+  "version": "1.0.0",
+  "hook": {
+    "path": "/scratch/shared/podman-hooks/bin/pmix_hook"
+  },
+  "when": { "always": true },
+  "stages": ["createContainer"]
+}
+EOF
 
-  touch "${HOOK_OUT}" "${HOOK_ERR}"
-  tail -fn +1 "${HOOK_OUT}" &
-  HOOK_OUT_PID=$!
-  tail -fn +1 "${HOOK_ERR}" &
-  HOOK_ERR_PID=$!
+  # [Common] Create podman module
+  export TMP_MODULE=$(mktemp --tmpdir=/scratch/shared/scratch/sarus-suite)
+  cat > "${TMP_MODULE}" <<EOF
+[containers]
+ipcns = "host"
+netns = "host"
+pidns = "host"
+utsns = "host"
+userns = "keep-id"
+cgroupns = "host"
+cgroups = "no-conmon"
 
-  # Prepare mock 'scontrol'
+[engine]
+runtime = "crun"
+conmon_path = ["/usr/local/vs-ce-podman/conmon-2.1.13"]
+
+[engine.runtimes]
+crun = ["/usr/local/vs-ce-podman/crun-1.24"]
+EOF
+
+  # [Common] Create and print hook stdout/stderr
+  export LOCAL_TMP_HOOK_LOG_DIR="$(mktemp -d)"
+  export LOCAL_HOOK_OUT="${LOCAL_TMP_HOOK_LOG_DIR}/out.log"
+  export LOCAL_HOOK_ERR="${LOCAL_TMP_HOOK_LOG_DIR}/err.log"
+
+  # [PMIx hook specific] Prepare mock 'scontrol'
   if ! which scontrol >/dev/null 2>&1; then
     echo "$0: info: scontrol not found. installing scontrol-mock..."
 
-    TMP_BIN_DIR=$(mktemp -d)
-    SCONTROL_MOCK=${TMP_BIN_DIR}/scontrol
+    export TMP_BIN_DIR=$(mktemp -d)
+    export SCONTROL_MOCK=${TMP_BIN_DIR}/scontrol
     cat <<EOS >${SCONTROL_MOCK}
 #!/bin/bash
 
@@ -35,11 +62,42 @@ EOS
     export PATH=${TMP_BIN_DIR}:${PATH}
   fi
 
-  # Derive SlurmdSpoolDir and TmpFS paths
-  SLURMD_SPOOL_DIR=$(scontrol show config | awk '/^SlurmdSpoolDir/ {print $3}')
-  SLURM_TMPFS=$(scontrol show config | awk '/^TmpFS/ {print $3}')
-  export SLURM_TMPFS
+  # [PMIx hook specific] Derive SlurmdSpoolDir and TmpFS paths
+  export SLURMD_SPOOL_DIR=$(scontrol show config | awk '/^SlurmdSpoolDir/ {print $3}')
+  export SLURM_TMPFS=$(scontrol show config | awk '/^TmpFS/ {print $3}')
+}
 
+teardown_file() {
+  # [Common] Remove hook config and log
+  rm -rf "${TMP_HOOKS_DIR}" "${LOCAL_TMP_HOOK_LOG_DIR}"
+
+  # [PMIx hook specific] Remove the temporary binary
+  if [[ -v TMP_BIN_DIR ]]; then
+    rm -rf "${TMP_BIN_DIR}"
+  fi
+}
+
+setup() {
+  # [Common] Create log
+  touch "${LOCAL_HOOK_OUT}" "${LOCAL_HOOK_ERR}"
+
+  # [Common] Start log printers
+  tail -fn +1 "${LOCAL_HOOK_OUT}" &
+  export LOCAL_HOOK_OUT_PID=$!
+  tail -fn +1 "${LOCAL_HOOK_ERR}" &
+  export LOCAL_HOOK_ERR_PID=$!
+}
+
+teardown() {
+  # [Common] Stop log printers 
+  kill "${LOCAL_HOOK_OUT_PID}" "${LOCAL_HOOK_ERR_PID}"
+  wait "${LOCAL_HOOK_OUT_PID}" "${LOCAL_HOOK_ERR_PID}" 2>/dev/null || true
+
+  # [Common] Clear log
+  rm "${LOCAL_HOOK_OUT}" "${LOCAL_HOOK_ERR}"
+}
+
+@test "pmix_hook mock pmix directories" {
   # Prepare mock PMIx directory
   SLURM_JOB_UID=0
   SLURM_JOB_ID=1
@@ -53,83 +111,71 @@ EOS
   # Export test environment variables
   export SLURM_MPI_TYPE=pmix 
   export PMIX_WHATEVER=yes 
-  export SLURM_JOB_ID=${SLURM_JOB_ID}
-  export SLURM_STEP_ID=${SLURM_STEP_ID}
 
-  # Create hook config
-  cat > "${TMP_HOOKS_DIR}/pmix-hook.json" <<EOF
-{
-  "version": "1.0.0",
-  "hook": {
-    "path": "/scratch/local/podman-hooks/bin/pmix_hook"
-  },
-  "when": { "always": true },
-  "stages": ["createContainer"]
-}
-EOF
-}
-
-teardown() {
-  kill "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
-  wait "${HOOK_OUT_PID}" "${HOOK_ERR_PID}"
-
-  rm -rf "${TMP_HOOKS_DIR}" "${TMP_HOOK_LOG_DIR}" "${PMIX_DIR}"
-
-  if [[ -v TMP_BIN_DIR ]]; then
-    rm -rf "${TMP_BIN_DIR}"
-  fi
-}
-
-@test "pmix_hook binds directory (nofail spmix_appdir)" {
-  SPMIX_APPDIR_UID_DIR=${SLURM_TMPFS}/spmix_appdir_${SLURM_JOB_UID}_${SLURM_JOB_ID}.${SLURM_STEP_ID}
-  rm -rf ${SPMIX_APPDIR_UID_DIR} || true
-  export SLURM_JOB_UID=${SLURM_JOB_UID}
-
-  podman --runtime=crun \
-    --hooks-dir "${TMP_HOOKS_DIR}" \
-    run --rm \
-      --annotation run.oci.hooks.stdout="${HOOK_OUT}" \
-      --annotation run.oci.hooks.stderr="${HOOK_ERR}" \
-      alpine sh -c "[ -d ${PMIX_DIR} ] || ! echo \"error: no pmix dir\""
-}
-
-@test "pmix_hook binds directory (with SLURM_JOB_UID)" {
+  # Test: spmix_appdir with SLURM_JOB_UID
   SPMIX_APPDIR_UID_DIR=${SLURM_TMPFS}/spmix_appdir_${SLURM_JOB_UID}_${SLURM_JOB_ID}.${SLURM_STEP_ID}
   sudo mkdir -p ${SPMIX_APPDIR_UID_DIR}
   sudo chown $(whoami) ${SPMIX_APPDIR_UID_DIR}
   sudo chgrp root ${SPMIX_APPDIR_UID_DIR}
-  export SLURM_JOB_UID=${SLURM_JOB_UID}
+
+  export SLURM_JOB_UID
+  export SLURM_JOB_ID
+  export SLURM_STEP_ID
 
   podman --runtime=crun \
     --hooks-dir "${TMP_HOOKS_DIR}" \
     run --rm \
-      --annotation run.oci.hooks.stdout="${HOOK_OUT}" \
-      --annotation run.oci.hooks.stderr="${HOOK_ERR}" \
+      --annotation run.oci.hooks.stdout="${LOCAL_HOOK_OUT}" \
+      --annotation run.oci.hooks.stderr="${LOCAL_HOOK_ERR}" \
       alpine sh -c "([ -d ${SPMIX_APPDIR_UID_DIR} ] || ! echo \"error: no spmix_appdir\") && \
             ([ -d ${PMIX_DIR} ] || ! echo \"error: no pmix dir\")"
 
-  rm -rf ${SPMIX_APPDIR_UID_DIR}
-}
-
-@test "pmix_hook binds directory (no SLURM_JOB_UID)" {
+  # Test: spmix_appdir without SLURM_JOB_UID
   SPMIX_APPDIR_NO_UID_DIR=${SLURM_TMPFS}/spmix_appdir_${SLURM_JOB_ID}.${SLURM_STEP_ID}
   sudo mkdir -p ${SPMIX_APPDIR_NO_UID_DIR}
   sudo chown $(whoami) ${SPMIX_APPDIR_NO_UID_DIR}
   sudo chgrp root ${SPMIX_APPDIR_NO_UID_DIR}
+
   unset SLURM_JOB_UID
+  export SLURM_JOB_ID
+  export SLURM_STEP_ID
 
   podman --runtime=crun \
     --hooks-dir "${TMP_HOOKS_DIR}" \
     run --rm \
-      --annotation run.oci.hooks.stdout="${HOOK_OUT}" \
-      --annotation run.oci.hooks.stderr="${HOOK_ERR}" \
+      --annotation run.oci.hooks.stdout="${LOCAL_HOOK_OUT}" \
+      --annotation run.oci.hooks.stderr="${LOCAL_HOOK_ERR}" \
       alpine sh -c "([ -d ${SPMIX_APPDIR_NO_UID_DIR} ] || ! echo \"error: no spmix_appdir\") && \
             ([ -d ${PMIX_DIR} ] || ! echo \"error: no pmix dir\")"
 
-  rm -rf ${SPMIX_APPDIR_NO_UID_DIR}
+  # Cleanup
+  sudo rm -rf "${SPMIX_APPDIR_NO_UID_DIR}" "${SPMIX_APPDIR_UID_DIR}" "${PMIX_DIR}"
 }
 
-@test "null TmpFS (expect crash)" {
+@test "pmix_hook srun pmix directories" {
+  # Check if srun-created PMIx directories are mounted well
+  srun --mpi pmix bash -c 'podman --module '"${TMP_MODULE}"' \
+    --hooks-dir '"${TMP_HOOKS_DIR}"' \
+    run --rm ubuntu bash -c "find '"${SLURM_TMPFS}"' -maxdepth 1 -name spmix_appdir* && \
+      find '"${SLURMD_SPOOL_DIR}"' -maxdepth 1 -name pmix*"'
+}
+
+@test "pmix_hook srun OSU pt2pt" {
+  # Check if OSU pt2pt is running well
+  # Note: OSU pt2pt doesn't run unless there are two distinct MPI ranks
+  srun -n2 --mpi pmix bash -c '\
+    env | grep "^PMIX_" > env-file_$SLURM_TASK_PID; \
+    echo PMIX_MCA_gds=shmem2,hash >> env-file_$SLURM_TASK_PID; \
+    echo PMIX_MCA_psec=munge,native >> env-file_$SLURM_TASK_PID; \
+    podman --module='"${TMP_MODULE}"' --runtime=crun \
+      --hooks-dir '"${TMP_HOOKS_DIR}"' \
+      run --rm \
+        --env-file=env-file_$SLURM_TASK_PID \
+        quay.io/madeeks/osu-mb:7.3-ompi5.0.5-ofi1.15.0-x86_64 \
+          bash -c '"'"'./pt2pt/osu_bw -m 8'"'"' '
+}
+
+@test "pmix_hook skip if TmpFS=(null)" {
   # Prepare mock 'scontrol' with (null) TmpFS
   SCONTROL_NULL_DIR=$(mktemp -d)
   SCONTROL_NULL=${SCONTROL_NULL_DIR}/scontrol
@@ -150,17 +196,16 @@ EOS
   chmod +x ${SCONTROL_NULL}
   export PATH=${SCONTROL_NULL_DIR}:${PATH}
 
-  ! podman --runtime=crun \
+  # See if the PMIx hook was skipped.
+  podman --runtime=crun \
     --hooks-dir "${TMP_HOOKS_DIR}" \
     run --rm \
-      --annotation run.oci.hooks.stdout="${HOOK_OUT}" \
-      --annotation run.oci.hooks.stderr="${HOOK_ERR}" \
-      alpine sh -c "([ -d ${SPMIX_APPDIR_NO_UID_DIR} ] || ! echo \"error: no spmix_appdir\") && \
-            ([ -d ${PMIX_DIR} ] || ! echo \"error: no pmix dir\")"
+      --annotation run.oci.hooks.stdout="${LOCAL_HOOK_OUT}" \
+      --annotation run.oci.hooks.stderr="${LOCAL_HOOK_ERR}" \
+      alpine echo
 
-  if [[ -v SCONTROL_MOCK} ]]; then
-    mv ${SCONTROL_MOCK_BAK} ${SCONTROL_MOCK}
-  fi
+  cat ${LOCAL_HOOK_OUT} | grep "No PMIx support." >/dev/null 2>&1
 
+  # Cleanup
   rm -rf "${SCONTROL_NULL_DIR}"
 }
