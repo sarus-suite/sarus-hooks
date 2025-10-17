@@ -164,13 +164,15 @@ teardown() {
   # Check if OSU pt2pt is running well
   # Note: OSU pt2pt doesn't run unless there are two distinct MPI ranks
   srun -n2 --mpi pmix bash -c '\
-    env | grep "^PMIX_" > env-file_$SLURM_TASK_PID; \
-    echo PMIX_MCA_gds=shmem2,hash >> env-file_$SLURM_TASK_PID; \
-    echo PMIX_MCA_psec=munge,native >> env-file_$SLURM_TASK_PID; \
+    TMP_ENV_FILE=$(mktemp); \
+    env | grep "^PMIX_" > $TMP_ENV_FILE; \
+    echo PMIX_MCA_gds=shmem2,hash >> $TMP_ENV_FILE; \
+    echo PMIX_MCA_psec=munge,native >> $TMP_ENV_FILE; \
+    trap EXIT "rm $TMP_ENV_FILE"; \
     podman --module='"${TMP_MODULE}"' --runtime=crun \
       --hooks-dir '"${TMP_HOOKS_DIR}"' \
       run --rm \
-        --env-file=env-file_$SLURM_TASK_PID \
+        --env-file=$TMP_ENV_FILE \
         quay.io/madeeks/osu-mb:7.3-ompi5.0.5-ofi1.15.0-x86_64 \
           bash -c '"'"'./pt2pt/osu_bw -m 8'"'"' '
 }
