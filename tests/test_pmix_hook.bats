@@ -163,6 +163,7 @@ teardown() {
 @test "pmix_hook srun OSU pt2pt" {
   # Check if OSU pt2pt is running well
   # Note: OSU pt2pt doesn't run unless there are two distinct MPI ranks
+  # TODO: simulate PMIX_MCA_... creation
   srun -n2 --mpi pmix bash -c '\
     TMP_ENV_FILE=$(mktemp); \
     trap EXIT "rm $TMP_ENV_FILE"; \
