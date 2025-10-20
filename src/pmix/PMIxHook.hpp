@@ -14,6 +14,7 @@ namespace pmix {
 
 class PMIxHook {
 public:
+    void printConfig() const;
     void activate();
 
 private:

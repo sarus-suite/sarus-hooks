@@ -164,9 +164,12 @@ teardown() {
 @test "pmix_hook srun OSU pt2pt" {
   # Check if OSU pt2pt is running well
   # Note: OSU pt2pt doesn't run unless there are two distinct MPI ranks
-  # TODO: detach this "envvar-injection" logic from the test (somehow)
+  # TODO: temporarily embedded the hook-specific container config to the hook.
   srun -n2 --mpi pmix bash -c '\
-    podman --module='"${TMP_MODULE}"' --module=<('"$HOOK_BIN_PATH"' c) --runtime=crun \
+    HOOK_CONFIG_FILE=$(mktemp); \
+    trap "rm ${HOOK_CONFIG_FILE}" EXIT; \
+    '"${HOOK_BIN_PATH}"' --config >> ${HOOK_CONFIG_FILE}; \
+    podman --module='"${TMP_MODULE}"' --module=${HOOK_CONFIG_FILE} --runtime=crun \
       --hooks-dir '"${TMP_HOOKS_DIR}"' \
       run --rm \
         quay.io/madeeks/osu-mb:7.3-ompi5.0.5-ofi1.15.0-x86_64 \
