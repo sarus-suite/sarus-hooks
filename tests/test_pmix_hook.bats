@@ -4,11 +4,12 @@ setup_file() {
 
   # [Common] Create hook config
   export TMP_HOOKS_DIR=$(mktemp -d --tmpdir=/scratch/shared/scratch/sarus-suite)
+  export HOOK_BIN_PATH="/scratch/shared/podman-hooks/bin/pmix_hook"
   cat > "${TMP_HOOKS_DIR}/pmix-hook.json" <<EOF
 {
   "version": "1.0.0",
   "hook": {
-    "path": "/scratch/shared/podman-hooks/bin/pmix_hook"
+    "path": "$HOOK_BIN_PATH"
   },
   "when": { "always": true },
   "stages": ["createContainer"]
@@ -163,19 +164,9 @@ teardown() {
 @test "pmix_hook srun OSU pt2pt" {
   # Check if OSU pt2pt is running well
   # Note: OSU pt2pt doesn't run unless there are two distinct MPI ranks
-  # TODO: simulate PMIX_MCA_... creation
+  # TODO: detach this "envvar-injection" logic from the test (somehow)
   srun -n2 --mpi pmix bash -c '\
-    TMP_ENV_FILE=$(mktemp); \
-    trap "rm $TMP_ENV_FILE" EXIT; \
-    echo [containers] >> $TMP_ENV_FILE; \
-    echo env=[ >> $TMP_ENV_FILE; \
-    env | grep "^PMIX_" | sed '"'"'s/^\(.*\)$/"\1",/g'"'"' >> $TMP_ENV_FILE; \
-    [ ! -v PMIX_PTL_MODULE ] || echo \"PMIX_MCA_gds=$PMIX_PTL_MODULE\", >> $TMP_ENV_FILE; \
-    [ ! -v PMIX_SECURITY_MODE ] || echo \"PMIX_MCA_psec=$PMIX_SECURITY_MODE\", >> $TMP_ENV_FILE; \
-    [ ! -v PMIX_GDS_MODULE ] || echo \"PMIX_MCA_gds=$PMIX_GDS_MODULE\", >> $TMP_ENV_FILE; \
-    echo ] >> $TMP_ENV_FILE; \
-    cat $TMP_ENV_FILE; \
-    podman --module='"${TMP_MODULE}"' --module=$TMP_ENV_FILE --runtime=crun \
+    podman --module='"${TMP_MODULE}"' --module=<('"$HOOK_BIN_PATH"' c) --runtime=crun \
       --hooks-dir '"${TMP_HOOKS_DIR}"' \
       run --rm \
         quay.io/madeeks/osu-mb:7.3-ompi5.0.5-ofi1.15.0-x86_64 \
