@@ -166,8 +166,7 @@ teardown() {
   # Note: OSU pt2pt doesn't run unless there are two distinct MPI ranks
   # TODO: temporarily embedded the hook-specific container config to the hook.
   srun -n2 --mpi pmix bash -c '\
-    HOOK_CONFIG_FILE=$(mktemp); \
-    trap "rm ${HOOK_CONFIG_FILE}" EXIT; \
+    HOOK_CONFIG_FILE=$(mktemp); trap "rm ${HOOK_CONFIG_FILE}" EXIT; \
     '"${HOOK_BIN_PATH}"' --config >> ${HOOK_CONFIG_FILE}; \
     podman --module='"${TMP_MODULE}"' --module=${HOOK_CONFIG_FILE} --runtime=crun \
       --hooks-dir '"${TMP_HOOKS_DIR}"' \
