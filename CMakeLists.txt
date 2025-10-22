@@ -30,7 +30,6 @@ message(STATUS "Build Dropbear: " ${BUILD_DROPBEAR})
 include_directories(${CMAKE_SOURCE_DIR}/dep/rapidjson/include)
 include_directories(${CMAKE_SOURCE_DIR}/dep/libsarus/include)
 
-# Boost filesystem and regex are included in libsarus (v1.82)
 find_package(Boost REQUIRED NO_MODULE COMPONENTS program_options filesystem regex)
 include_directories(${Boost_INCLUDE_DIRS})
 
