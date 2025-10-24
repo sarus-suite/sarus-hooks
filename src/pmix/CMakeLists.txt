@@ -1,7 +1,7 @@
 file(GLOB hooks_pmix_srcs "*.cpp" "*.c")
 list(REMOVE_ITEM hooks_pmix_srcs ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 add_library(hooks_pmix_library STATIC ${hooks_pmix_srcs})
-target_link_libraries(hooks_pmix_library libsarus_static ${Boost_LIBRARIES})
+target_link_libraries(hooks_pmix_library libsarus ${Boost_LIBRARIES})
 
 add_executable(pmix_hook "main.cpp")
 target_link_libraries(pmix_hook hooks_pmix_library)

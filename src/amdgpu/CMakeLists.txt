@@ -2,7 +2,7 @@
 file(GLOB hooks_amdgpu_srcs "*.cpp" "*.c")
 list(REMOVE_ITEM hooks_amdgpu_srcs ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 add_library(hooks_amdgpu_library STATIC ${hooks_amdgpu_srcs})
-target_link_libraries(hooks_amdgpu_library libsarus_static ${Boost_LIBRARIES})
+target_link_libraries(hooks_amdgpu_library libsarus ${Boost_LIBRARIES})
 
 add_executable(amdgpu_hook "main.cpp")
 target_link_libraries(amdgpu_hook hooks_amdgpu_library)
