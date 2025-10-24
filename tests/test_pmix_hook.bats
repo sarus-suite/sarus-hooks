@@ -2,6 +2,11 @@ setup_file() {
   # [Common] Make sure Podman doesn't use /run/users 
   unset XDG_RUNTIME_DIR
 
+  # [Common] Define 'sarus-hooks' source root
+  export SARUS_HOOKS_SRC_ROOT=$(realpath $BATS_TEST_DIRNAME/../src)
+  echo ${BASH_SOURCE[0]}
+  echo ${SARUS_HOOKS_SRC_ROOT}
+
   # [Common] Create hook config
   export TMP_HOOKS_DIR=$(mktemp -d --tmpdir=/scratch/shared/scratch/sarus-suite)
   export HOOK_BIN_PATH="/scratch/shared/podman-hooks/bin/pmix_hook"
@@ -70,13 +75,14 @@ EOS
 
 teardown_file() {
   # [Common] Remove hook config and log
-  rm -rf "${TMP_HOOKS_DIR}" "${LOCAL_TMP_HOOK_LOG_DIR}"
+  rm -rf "${TMP_HOOKS_DIR}" "${TMP_MODULE}" "${LOCAL_TMP_HOOK_LOG_DIR}"
 
   # [PMIx hook specific] Remove the temporary binary
   if [[ -v TMP_BIN_DIR ]]; then
     rm -rf "${TMP_BIN_DIR}"
   fi
 }
+
 
 setup() {
   # [Common] Create log
@@ -164,15 +170,18 @@ teardown() {
 @test "pmix_hook srun OSU pt2pt" {
   # Check if OSU pt2pt is running well
   # Note: OSU pt2pt doesn't run unless there are two distinct MPI ranks
-  # TODO: temporarily embedded the hook-specific container config to the hook.
+  # TODO: create a precreate hook for Lines 179~182.
+  # TODO: (PMIX_MCA_* should be created only when they're not pre-defined.)
   srun -n2 --mpi pmix bash -c '\
-    HOOK_CONFIG_FILE=$(mktemp); trap "rm ${HOOK_CONFIG_FILE}" EXIT; \
-    '"${HOOK_BIN_PATH}"' --config >> ${HOOK_CONFIG_FILE}; \
-    podman --module='"${TMP_MODULE}"' --module=${HOOK_CONFIG_FILE} --runtime=crun \
-      --hooks-dir '"${TMP_HOOKS_DIR}"' \
+    podman --module='"${TMP_MODULE}"' \
+      --hooks-dir='"${TMP_HOOKS_DIR}"' \
       run --rm \
+        --env PMIX_MCA_gds=$PMIX_GDS_MODULE \
+        --env PMIX_MCA_psec=$PMIX_SECURITY_MODE \
+        --env PMIX_MCA_ptl=$PMIX_PTL_MODULE \
+        --env PMIX_* \
         quay.io/madeeks/osu-mb:7.3-ompi5.0.5-ofi1.15.0-x86_64 \
-          bash -c '"'"'env | grep ^PMIX_; ./pt2pt/osu_bw -m 8'"'"' '
+          bash -c '"'"'env | grep ^PMIX_ && ./pt2pt/osu_bw -m 8'"'"' '
 }
 
 @test "pmix_hook skip if TmpFS=(null)" {

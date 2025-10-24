@@ -235,41 +235,6 @@ void PMIxHook::log(const std::string& message, libsarus::LogLevel level) const {
     libsarus::Logger::getInstance().log(message, subsystemName, level);
 }
 
-void PMIxHook::printConfig() const {
-    std::string env_output;
-
-    try {
-        env_output = libsarus::process::executeCommand("env");
-    } catch (...) {
-        log("Cannot retrieve environment variables", libsarus::LogLevel::ERROR);
-        return;
-    }
-
-    std::cout << "[containers]" << std::endl;
-    std::cout << "env = [" << std::endl;
-
-    auto ss = std::stringstream{env_output};
-    auto line = std::string{};
-
-    while (std::getline(ss, line)) {
-        if (line.substr(0, 5) == "PMIX_") 
-            std::cout << "\"" << line << "\"," << std::endl; 
-
-        if (line.find('=') != std::string::npos) {
-            std::string value = line.substr(line.find('=') + 1);
-
-            if (line.substr(0, 15) == "PMIX_PTL_MODULE")
-                std::cout << "\"PMIX_MCA_ptl=" << value << "\"," << std::endl;
-            else if (line.substr(0, 18) == "PMIX_SECURITY_MODE")
-                std::cout << "\"PMIX_MCA_psec=" << value << "\"," << std::endl;
-            else if (line.substr(0, 15) == "PMIX_GDS_MODULE")
-                std::cout << "\"PMIX_MCA_gds=" << value << "\"," << std::endl;
-        }
-    }
-
-  std::cout << "]" << std::endl;
-}
-
 
 }}} // closing namespaces
 
