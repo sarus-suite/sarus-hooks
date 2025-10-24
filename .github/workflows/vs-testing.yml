@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Setup temporary dir
         run: |
-          TMP_DIR=$(mktemp -d)
+          TMP_DIR=$(mktemp -d --tmpdir=/scratch/shared/scratch/sarus-suite)
           echo "TMP_DIR=$TMP_DIR" >> $GITHUB_ENV
           echo "Using temp directory: $TMP_DIR" 
 
@@ -79,6 +79,7 @@ jobs:
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_glibc_hook.bats
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_ldcache_hook.bats
           sed -i "s#/scratch/local/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_mount_hook.bats
+          sed -i "s#/scratch/shared/podman-hooks/bin/#${HOOKS_BIN}/#g" tests/test_pmix_hook.bats
           # now run tests
           $TMP_DIR/bats/bin/bats tests
         working-directory: ${{ env.TMP_DIR}}

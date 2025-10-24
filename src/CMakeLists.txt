@@ -9,7 +9,8 @@ add_subdirectory(slurm_global_sync)
 add_subdirectory(timestamp)
 add_subdirectory(stdout_stderr_test)
 add_subdirectory(ldcache)
+add_subdirectory(pmix)
 
 # Collective target for hooks
 add_custom_target(hooks ALL)
-add_dependencies(hooks glibc_hook mount_hook mpi_hook mps_hook slurm_global_sync_hook ssh_hook stdout_stderr_test_hook timestamp_hook)
+add_dependencies(hooks glibc_hook mount_hook mpi_hook mps_hook slurm_global_sync_hook ssh_hook stdout_stderr_test_hook timestamp_hook pmix_hook)
