@@ -181,7 +181,7 @@ teardown() {
         --env PMIX_MCA_ptl=$PMIX_PTL_MODULE \
         --env PMIX_* \
         quay.io/madeeks/osu-mb:7.3-ompi5.0.5-ofi1.15.0-x86_64 \
-          bash -c '"'"'env | grep ^PMIX_ && ./pt2pt/osu_bw -m 8'"'"' '
+          ./pt2pt/osu_bw -m 8'
 }
 
 @test "pmix_hook skip if TmpFS=(null)" {
