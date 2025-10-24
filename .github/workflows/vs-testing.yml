@@ -51,6 +51,7 @@ jobs:
               -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
               -DBUILD_DROPBEAR=0 \
               -DENABLE_UNIT_TESTS=0 \
+              -DENABLE_DEP_BUILD=0 \
               -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_INSTALL_PREFIX=$TMP_DIR/podman-hooks
             cmake --build build --parallel
