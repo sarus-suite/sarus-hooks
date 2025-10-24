@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Setup temporary dir
         run: |
-          TMP_DIR=$(mktemp -d)
+          TMP_DIR=$(mktemp -d --tmpdir=/scratch/shared/scratch/sarus-suite)
           echo "TMP_DIR=$TMP_DIR" >> $GITHUB_ENV
           echo "Using temp directory: $TMP_DIR" 
 
